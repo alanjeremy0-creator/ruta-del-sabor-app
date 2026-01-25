@@ -34,7 +34,7 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule, 
         return (
             <div className="card-pixel mb-6 border-2 border-[var(--pixel-cyan)] bg-[#0f1020] overflow-hidden relative shadow-[0_0_15px_rgba(34,211,209,0.15)] animate-fade-in">
                 {/* Decoration: Colorful top bar */}
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[var(--pixel-cyan)] via-purple-500 to-[var(--pixel-pink)]" />
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[var(--pixel-cyan)] via-purple-500 to-[var(--pixel-pink)] animate-flash" />
 
                 <div className="p-5 flex flex-col gap-4">
                     <div className="flex items-center gap-4">
@@ -94,7 +94,7 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule, 
         return (
             <div className="card-pixel mb-6 border-2 border-purple bg-surface/50 overflow-hidden relative animate-pulse">
                 {/* Decoration */}
-                <div className="absolute top-0 right-0 w-full h-1.5 bg-gradient-to-r from-purple-500 via-[var(--pixel-cyan)] to-[var(--pixel-pink)] animate-pulse" />
+                <div className="absolute top-0 right-0 w-full h-1.5 bg-gradient-to-r from-purple-500 via-[var(--pixel-cyan)] to-[var(--pixel-pink)] animate-flash" />
 
                 <div className="p-4 flex items-center gap-4">
                     <div className="w-12 h-12 relative">
