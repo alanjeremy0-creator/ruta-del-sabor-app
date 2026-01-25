@@ -216,25 +216,15 @@ export default function HomePage() {
                 />
               )}
 
-              {/* MAIN PLAN CARD - Only shows if confirmed OR purely for visibility while waiting (optional) */}
-              {/* Decision: If pending, keep showing Main Card underneath but dimmed? Or replace? */}
-              {/* User preference: "Always one active plan". If waiting, it's effectively active but blocked. */}
-              {/* Let's show it but maybe clearly marked as tentative if pending */}
-
+              {/* MAIN PLAN CARD - Always visible and interactive so user can see details */}
               <div
-                onClick={() => {
-                  // If pending, clicking might verify details but not "start"
-                  if (showMainCard) router.push(`/place/${rawNextVisit.place.id}`);
-                }}
-                className={`
-                        transition-all duration-300 relative group
-                        ${showMainCard ? "cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-purple/20 active:scale-[0.98]" : "opacity-80 pointer-events-none grayscale-[0.3]"}
-                    `}
+                onClick={() => router.push(`/place/${rawNextVisit.place.id}`)}
+                className="cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-purple/20 active:scale-[0.98] transition-all duration-300 relative group"
               >
                 {/* Custom interactive card for Next Visit */}
                 <div className={`
                     card-pixel border-2 relative z-10 bg-surface
-                    ${showMainCard ? "border-purple/50 group-hover:border-purple" : "border-border border-dashed"}
+                    ${showMainCard ? "border-purple/50 group-hover:border-purple" : "border-gold/50 border-dashed"}
                 `}>
                   <div className="p-4 flex items-center gap-4">
                     <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
@@ -247,8 +237,10 @@ export default function HomePage() {
                       <p className="text-xs text-muted mt-1 uppercase tracking-wider line-clamp-2">
                         {rawNextVisit.place.address}
                       </p>
-                      <div className="mt-2 flex items-center gap-2 text-purple font-bold text-sm">
-                        <span>{new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(rawNextVisit.visitDate))}</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-purple font-bold text-sm">
+                        {/* Show Full Date: Jue 25 Ene, 3:00 p.m. */}
+                        <span className="capitalize">{new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(rawNextVisit.visitDate))}</span>
+
                         {(() => {
                           if (!showMainCard) return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">Por confirmar</span>;
 
@@ -275,16 +267,13 @@ export default function HomePage() {
                         })()}
                       </div>
                     </div>
-                    {showMainCard && (
-                      <div className="text-purple opacity-50 group-hover:opacity-100 transition-opacity">
-                        &gt;
-                      </div>
-                    )}
+                    <div className="text-purple opacity-50 group-hover:opacity-100 transition-opacity">
+                      &gt;
+                    </div>
                   </div>
                 </div>
-                {showMainCard && (
-                  <div className="absolute inset-0 bg-purple/20 blur-xl rounded-lg -z-0 opacity-0 group-hover:opacity-50 transition-opacity" />
-                )}
+                {/* Glow effect */}
+                <div className="absolute inset-0 bg-purple/20 blur-xl rounded-lg -z-0 opacity-0 group-hover:opacity-50 transition-opacity" />
               </div>
 
               {/* BLOCKED 'ADD' BUTTON WITH MESSAGE */}
