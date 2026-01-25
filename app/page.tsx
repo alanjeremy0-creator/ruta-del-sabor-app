@@ -250,7 +250,7 @@ export default function HomePage() {
                       <div className="mt-2 flex items-center gap-2 text-purple font-bold text-sm">
                         <span>{new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(rawNextVisit.visitDate))}</span>
                         {(() => {
-                          if (!showMainCard) return <span className="text-[10px] bg-border text-muted px-2 py-0.5 rounded-full">Por confirmar</span>;
+                          if (!showMainCard) return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">Por confirmar</span>;
 
                           const visitTime = new Date(rawNextVisit.visitDate).getTime();
                           const now = Date.now();

@@ -79,18 +79,38 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule, 
         );
     } else {
         // CASE: I am waiting for the partner (It's NOT my turn)
+        const partnerAvatar = users?.[partnerId]?.avatarUrl;
+
         return (
-            <div className="card-pixel mb-6 border-2 border-border border-dashed bg-surface/30 p-4 flex items-center gap-4 animate-pulse opacity-80">
-                <div className="w-10 h-10 rounded-full bg-border/50 flex items-center justify-center grayscale">
-                    ⏳
-                </div>
-                <div>
-                    <h3 className="font-space font-bold text-muted">
-                        Esperando a {partnerName}...
-                    </h3>
-                    <p className="text-xs text-muted/70">
-                        Le enviamos la propuesta. Te avisaremos cuando confirme. 👀
-                    </p>
+            <div className="card-pixel mb-6 border-2 border-purple bg-surface/50 overflow-hidden relative animate-pulse">
+                {/* Decoration */}
+                <div className="absolute top-0 right-0 w-full h-1 bg-purple animate-pulse" />
+
+                <div className="p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 relative">
+                        {/* Partner Avatar */}
+                        <div className="w-12 h-12 rounded-full border-2 border-purple overflow-hidden bg-surface">
+                            {partnerAvatar ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={partnerAvatar} alt={partnerName} className="w-full h-full object-cover grayscale opacity-80" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-purple/20 text-xl">👤</div>
+                            )}
+                        </div>
+                        {/* Hourglass Badge */}
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-base border border-purple flex items-center justify-center text-xs shadow-lg">
+                            ⏳
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="font-space font-bold text-purple">
+                            Esperando a {partnerName}...
+                        </h3>
+                        <p className="text-xs text-muted leading-tight mt-1">
+                            Le enviamos la propuesta. Te avisaremos en cuanto confirme. 👀
+                        </p>
+                    </div>
                 </div>
             </div>
         );
