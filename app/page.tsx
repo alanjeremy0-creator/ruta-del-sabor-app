@@ -212,6 +212,7 @@ export default function HomePage() {
                     rawNextVisit.id,
                     new Date(rawNextVisit.visitDate)
                   )}
+                  users={allUsers}
                 />
               )}
 

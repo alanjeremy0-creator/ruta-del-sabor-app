@@ -10,9 +10,10 @@ interface PlanStatusCardProps {
     currentUserId: "ara" | "jeremy";
     onConfirm: (visitId: string) => void;
     onReschedule: () => void; // Opens the modal
+    users?: Record<string, { id: string; name: string; avatarUrl: string }>;
 }
 
-export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule }: PlanStatusCardProps) {
+export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule, users }: PlanStatusCardProps) {
     const { proposedBy, confirmationStatus, userId: creatorId } = visit;
 
     // If it's already confirmed or is a legacy plan (undefined status), don't show this card
@@ -21,7 +22,12 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule }
     }
 
     const isMyTurn = proposedBy !== currentUserId;
+    const partnerId = currentUserId === "ara" ? "jeremy" : "ara";
     const partnerName = currentUserId === "ara" ? "Jeremy" : "Ara";
+
+    // Get proposer's avatar (whoever proposed it)
+    const proposerId = proposedBy || creatorId; // Fallback to creator if undefined
+    const proposerAvatar = users?.[proposerId]?.avatarUrl;
 
     if (isMyTurn) {
         // CASE: I need to respond (It's my turn)
@@ -32,8 +38,13 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule }
 
                 <div className="p-4 flex flex-col gap-3">
                     <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gold/20 flex items-center justify-center text-xl shrink-0">
-                            ✨
+                        <div className="w-10 h-10 rounded-full border-2 border-gold overflow-hidden shrink-0 bg-surface">
+                            {proposerAvatar ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={proposerAvatar} alt={partnerName} className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gold/20 text-xl">✨</div>
+                            )}
                         </div>
                         <div>
                             <h3 className="font-space font-bold text-gold">
@@ -52,14 +63,14 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule }
                             className="flex-1 btn-pixel py-2 px-3 text-xs flex items-center justify-center gap-2"
                             style={{ background: "var(--pixel-cyan)", color: "#0f172a" }}
                         >
-                            <Check className="w-4 h-4" />
+                            <span className="text-sm">✅</span>
                             ¡Jalo!
                         </button>
                         <button
                             onClick={onReschedule}
                             className="flex-1 btn-pixel py-2 px-3 text-xs flex items-center justify-center gap-2 bg-surface border-2 border-border hover:border-gold transition-colors"
                         >
-                            <CalendarClock className="w-4 h-4 text-muted" />
+                            <span className="text-sm">📅</span>
                             Mmmm, mejor otro día
                         </button>
                     </div>
