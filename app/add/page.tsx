@@ -174,10 +174,10 @@ export default function AddPlanPage() {
                         </div>
                     </div>
                     <h2 className="font-space font-bold text-2xl text-pink mb-2 animate-fade-in">
-                        ¡Listo, ya quedó!
+                        ¡Propuesta enviada! 📨
                     </h2>
                     <p className="text-lg text-muted animate-fade-in" style={{ animationDelay: "0.3s" }}>
-                        Ahí te veo, amor 💖
+                        Esperando el visto bueno de tu amor 💖
                     </p>
                 </div>
 

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
@@ -12,14 +10,21 @@ import { FoodEmblem } from "@/components/ui/FoodEmblem";
 import { PixelHeartAnimated } from "@/components/ui/PixelHeart";
 import { useVisits } from "@/hooks/useVisits";
 import { deleteAllVisits } from "@/lib/cleanup";
+import { PlanStatusCard } from "@/components/ui/PlanStatusCard";
+import { RescheduleModal } from "@/components/ui/RescheduleModal";
 
 export default function HomePage() {
   const router = useRouter();
   const { user, isLoading: userLoading, needsOnboarding } = useUser();
-  const { plannedVisits, completedVisits, isLoading: visitsLoading, refreshVisits } = useVisits();
+  const { plannedVisits, completedVisits, isLoading: visitsLoading, refreshVisits, confirmVisit, updateVisitDate } = useVisits();
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [allUsers, setAllUsers] = useState<Record<string, any>>({});
+
+  // Reschedule Modal State
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [rescheduleVisitId, setRescheduleVisitId] = useState<string | null>(null);
+  const [rescheduleCurrentDate, setRescheduleCurrentDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     if (!userLoading && needsOnboarding) {
@@ -39,6 +44,38 @@ export default function HomePage() {
   const handleRate = (visitId: string) => {
     router.push(`/rate/${visitId}`);
   };
+
+  // --- CONFIRMATION FLOW HANDLERS ---
+  const handleConfirmPlan = async (visitId: string) => {
+    try {
+      await confirmVisit(visitId);
+      setToast({ message: "¡Cita confirmada! 🎉", type: "success" });
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 2500);
+    } catch (err) {
+      setToast({ message: "Error al confirmar", type: "error" });
+    }
+  };
+
+  const handleOpenReschedule = (visitId: string, currentDate: Date) => {
+    setRescheduleVisitId(visitId);
+    setRescheduleCurrentDate(currentDate);
+    setIsRescheduleModalOpen(true);
+  };
+
+  const handleRescheduleSubmit = async (date: string, time: string) => {
+    if (!rescheduleVisitId || !user) return;
+
+    try {
+      const newDate = new Date(`${date}T${time}`);
+      await updateVisitDate(rescheduleVisitId, newDate, user.id);
+      setToast({ message: "Propuesta enviada 📨", type: "success" });
+    } catch (err) {
+      console.error(err)
+      setToast({ message: "Error al reagendar", type: "error" });
+    }
+  };
+
 
   // Buffer: 10 minutes after the visit time before showing in "calificar"
   const BUFFER_MINUTES = 10;
@@ -65,7 +102,21 @@ export default function HomePage() {
   // --- FILTER LOGIC ---
 
   // 1. Next Visit: Earliest planned visit that is NOT past buffer
-  const nextVisit = plannedVisits.find(v => !isVisitPastBuffer(new Date(v.visitDate)));
+  const rawNextVisit = plannedVisits.find(v => !isVisitPastBuffer(new Date(v.visitDate)));
+
+  // Logic: If there is a "Pending" plan, show it. If it's "Confirmed" (or legacy), show the card.
+  // The 'rawNextVisit' contains the visit object. We check status in the UI.
+  const pendingVisit = rawNextVisit && rawNextVisit.confirmationStatus === 'pending';
+
+  // Only show the Main Card if it's confirmed (or legacy undefined)
+  // If it's pending, we show the PlanStatusCard instead (or "Waiting" state)
+  const showMainCard = rawNextVisit && (rawNextVisit.confirmationStatus === 'confirmed' || rawNextVisit.confirmationStatus === undefined);
+
+  // BLOCK ADDING NEW PLANS: If there is ANY planned visit (confirmed OR pending), restrict adding another.
+  // Exception: If current logic allows multiple planned visits, we should check requirements.
+  // User said: "siempre debe de haber una solo plan activo".
+  const hasActivePlan = !!rawNextVisit;
+
 
   // 2. Visits To Rate:
   //    - Planned visits that ARE past buffer
@@ -77,28 +128,13 @@ export default function HomePage() {
   ].sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime());
 
   // 3. History:
-  //    - Visits where CURRENT USER has rated (or implicitly any completed visit)
-  //    User requested: "Si aun no califique uno que se muestre la calificación de quien califico... esperando"
-  //    So we show ALL completed visits here. The PlaceCard will handle the "Waiting" UI for my missing rating.
-  //    BUT to avoid duplication with "Visits To Rate", maybe we exclude it?
-  //    The user explicitly said: "Para pasar a Nuestra Ruta... si, pero cuando aún no califique uno...".
-  //    This implies it IS in "Nuestra Ruta".
-  //    If it's also in "Visits To Rate", it appears twice.
-  //    Let's keep it in "Nuestra Ruta" IF at least one person rated (so it's in completedVisits).
-  //    AND we keep it in "Visits To Rate" as an actionable item.
-  //    Ideally, if I haven't rated, it's a TASK, so "Que tal estuvo" is the right place.
-  //    Let's put it in "History" ONLY if I have rated OR if both have rated?
-  //    No, user wants to see what the OTHER person rated while waiting for me.
-  //    Okay, I will include it in both for now, or maybe filtering logic:
-  //    - If I haven't rated, showing it in History is okay (as "Shared Log").
-  //    - It acts as a reminder in "Que tal estuvo".
   const historyVisits = completedVisits;
 
   const isLoading = userLoading || visitsLoading;
 
   // Get icon for next visit
-  const NextIcon = nextVisit ? (
-    require("@/components/ui/FoodIcons").categoryIcons[nextVisit.place.category] || FoodIcon
+  const NextIcon = rawNextVisit ? (
+    require("@/components/ui/FoodIcons").categoryIcons[rawNextVisit.place.category] || FoodIcon
   ) : FoodIcon;
 
   if (isLoading) {
@@ -139,7 +175,7 @@ export default function HomePage() {
           </p>
 
 
-          {!nextVisit ? (
+          {!rawNextVisit ? (
             <div className="card-pixel p-8 text-center border-dashed">
               <div className="w-16 h-16 mx-auto mb-4 bg-surface rounded-full flex items-center justify-center text-3xl">
                 🗺️
@@ -163,56 +199,99 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <div
-              onClick={() => router.push(`/place/${nextVisit.place.id}`)}
-              className="cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-purple/20 active:scale-[0.98] transition-all duration-300 relative group"
-            >
-              {/* Custom interactive card for Next Visit */}
-              <div className="card-pixel border-2 border-purple/50 group-hover:border-purple relative z-10 bg-surface">
-                <div className="p-4 flex items-center gap-4">
-                  <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
-                    <NextIcon size={32} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-lg text-white group-hover:text-purple transition-colors truncate">
-                      {nextVisit.place.name}
-                    </h3>
-                    <p className="text-xs text-muted mt-1 uppercase tracking-wider line-clamp-2">
-                      {nextVisit.place.address}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2 text-purple font-bold text-sm">
-                      <span>{new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(nextVisit.visitDate))}</span>
-                      {(() => {
-                        const visitTime = new Date(nextVisit.visitDate).getTime();
-                        const now = Date.now();
-                        const diffMinutes = (visitTime - now) / (1000 * 60);
+            <>
+              {/* PENDING CONFIRMATION CARD */}
+              {pendingVisit && user && (
+                <PlanStatusCard
+                  visit={rawNextVisit}
+                  currentUserId={user.id}
+                  onConfirm={handleConfirmPlan}
+                  onReschedule={() => handleOpenReschedule(
+                    rawNextVisit.id,
+                    new Date(rawNextVisit.visitDate)
+                  )}
+                />
+              )}
 
-                        // Show "¡Es ahora!" only if within 10 minutes BEFORE the visit time (green)
-                        if (diffMinutes > 0 && diffMinutes <= 10) {
-                          return <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full animate-pulse">¡Es ahora!</span>;
-                        } else if (diffMinutes > 10) {
-                          // Show time remaining (yellow) - up to 24 hours before
-                          const hours = Math.floor(diffMinutes / 60);
-                          const mins = Math.floor(diffMinutes % 60);
-                          const timeText = hours > 0
-                            ? `En ${hours}h ${mins > 0 ? `${mins}m` : ''}`
-                            : `En ${mins}m`;
-                          return <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full animate-pulse">{timeText}</span>;
-                        } else if (diffMinutes <= 0) {
-                          // Time has arrived or passed - enjoying the meal (aqua)
-                          return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">🍽️ Disfrútalo</span>;
-                        }
-                        return null;
-                      })()}
+              {/* MAIN PLAN CARD - Only shows if confirmed OR purely for visibility while waiting (optional) */}
+              {/* Decision: If pending, keep showing Main Card underneath but dimmed? Or replace? */}
+              {/* User preference: "Always one active plan". If waiting, it's effectively active but blocked. */}
+              {/* Let's show it but maybe clearly marked as tentative if pending */}
+
+              <div
+                onClick={() => {
+                  // If pending, clicking might verify details but not "start"
+                  if (showMainCard) router.push(`/place/${rawNextVisit.place.id}`);
+                }}
+                className={`
+                        transition-all duration-300 relative group
+                        ${showMainCard ? "cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-purple/20 active:scale-[0.98]" : "opacity-80 pointer-events-none grayscale-[0.3]"}
+                    `}
+              >
+                {/* Custom interactive card for Next Visit */}
+                <div className={`
+                    card-pixel border-2 relative z-10 bg-surface
+                    ${showMainCard ? "border-purple/50 group-hover:border-purple" : "border-border border-dashed"}
+                `}>
+                  <div className="p-4 flex items-center gap-4">
+                    <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
+                      <NextIcon size={32} />
                     </div>
-                  </div>
-                  <div className="text-purple opacity-50 group-hover:opacity-100 transition-opacity">
-                    &gt;
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg text-white group-hover:text-purple transition-colors truncate">
+                        {rawNextVisit.place.name}
+                      </h3>
+                      <p className="text-xs text-muted mt-1 uppercase tracking-wider line-clamp-2">
+                        {rawNextVisit.place.address}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2 text-purple font-bold text-sm">
+                        <span>{new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(rawNextVisit.visitDate))}</span>
+                        {(() => {
+                          if (!showMainCard) return <span className="text-[10px] bg-border text-muted px-2 py-0.5 rounded-full">Por confirmar</span>;
+
+                          const visitTime = new Date(rawNextVisit.visitDate).getTime();
+                          const now = Date.now();
+                          const diffMinutes = (visitTime - now) / (1000 * 60);
+
+                          // Show "¡Es ahora!" only if within 10 minutes BEFORE the visit time (green)
+                          if (diffMinutes > 0 && diffMinutes <= 10) {
+                            return <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full animate-pulse">¡Es ahora!</span>;
+                          } else if (diffMinutes > 10) {
+                            // Show time remaining (yellow) - up to 24 hours before
+                            const hours = Math.floor(diffMinutes / 60);
+                            const mins = Math.floor(diffMinutes % 60);
+                            const timeText = hours > 0
+                              ? `En ${hours}h ${mins > 0 ? `${mins}m` : ''}`
+                              : `En ${mins}m`;
+                            return <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full animate-pulse">{timeText}</span>;
+                          } else if (diffMinutes <= 0) {
+                            // Time has arrived or passed - enjoying the meal (aqua)
+                            return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">🍽️ Disfrútalo</span>;
+                          }
+                          return null;
+                        })()}
+                      </div>
+                    </div>
+                    {showMainCard && (
+                      <div className="text-purple opacity-50 group-hover:opacity-100 transition-opacity">
+                        &gt;
+                      </div>
+                    )}
                   </div>
                 </div>
+                {showMainCard && (
+                  <div className="absolute inset-0 bg-purple/20 blur-xl rounded-lg -z-0 opacity-0 group-hover:opacity-50 transition-opacity" />
+                )}
               </div>
-              <div className="absolute inset-0 bg-purple/20 blur-xl rounded-lg -z-0 opacity-0 group-hover:opacity-50 transition-opacity" />
-            </div>
+
+              {/* BLOCKED 'ADD' BUTTON WITH MESSAGE */}
+              {/* Since a plan exists (pending or confirmed), we show a disabled add button or just hide it? */}
+              {/* User said: "no se puede generar otro plan mientras no se concrete el que esta activo" */}
+              {/* So if `rawNextVisit` exists, we probably shouldn't see the Empty State which contains the add button. */}
+              {/* The "Empty State" block above only renders `!rawNextVisit`. */}
+              {/* So effectively, the add button IS hidden when a plan exists. Logic holds. */}
+
+            </>
           )}
         </section>
 
@@ -281,6 +360,15 @@ export default function HomePage() {
       }
 
       <PixelConfetti isActive={showConfetti} />
+
+      {/* Modals */}
+      <RescheduleModal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => setIsRescheduleModalOpen(false)}
+        onSubmit={handleRescheduleSubmit}
+        currentDate={rescheduleCurrentDate}
+      />
+
     </div >
   );
 }

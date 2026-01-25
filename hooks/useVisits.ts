@@ -76,12 +76,36 @@ export function useVisits() {
         }
     };
 
+    const updateVisitDate = async (visitId: string, newDate: Date, proposedBy: "ara" | "jeremy") => {
+        try {
+            const { updateVisitDate: updateVisitDateFirestore } = await import("@/lib/firestore");
+            await updateVisitDateFirestore(visitId, newDate, proposedBy);
+            await fetchVisits();
+        } catch (err) {
+            console.error("Error updating visit date:", err);
+            throw err;
+        }
+    };
+
+    const confirmVisit = async (visitId: string) => {
+        try {
+            const { confirmVisit: confirmVisitFirestore } = await import("@/lib/firestore");
+            await confirmVisitFirestore(visitId);
+            await fetchVisits();
+        } catch (err) {
+            console.error("Error confirming visit:", err);
+            throw err;
+        }
+    };
+
     return {
         plannedVisits,
         completedVisits,
         isLoading,
         error,
         refreshVisits: fetchVisits,
-        completeVisit
+        completeVisit,
+        updateVisitDate,
+        confirmVisit
     };
 }

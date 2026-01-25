@@ -39,85 +39,14 @@ export interface Visit {
     userId: "ara" | "jeremy"; // Creator
     visitDate: Timestamp;
     status: "planned" | "completed";
+    confirmationStatus?: 'pending' | 'confirmed'; // New field for Option B
+    proposedBy?: "ara" | "jeremy"; // New field for ping-pong
     ratings: Record<string, Rating>; // Map by userId
     createdAt: Timestamp;
     completedAt?: Timestamp; // Time of first completion? Or update every time?
 }
 
-// Places
-export async function getPlace(placeId: string): Promise<Place | null> {
-    const docRef = doc(db, "places", placeId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-        return { id: docSnap.id, ...docSnap.data() } as Place;
-    }
-    return null;
-}
-
-export async function savePlace(place: Omit<Place, "createdAt">): Promise<void> {
-    const docRef = doc(db, "places", place.id);
-    await setDoc(docRef, {
-        ...place,
-        createdAt: Timestamp.now(),
-    });
-}
-
-// Visits
-export async function getVisits(): Promise<Visit[]> {
-    const visitsRef = collection(db, "visits");
-    const q = query(visitsRef, orderBy("visitDate", "desc"));
-    const querySnapshot = await getDocs(q);
-
-    return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Visit[];
-}
-
-export async function getPlannedVisits(): Promise<Visit[]> {
-    const visitsRef = collection(db, "visits");
-    const q = query(
-        visitsRef,
-        where("status", "==", "planned"),
-        orderBy("visitDate", "asc")
-    );
-    const querySnapshot = await getDocs(q);
-
-    return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Visit[];
-}
-
-export async function getCompletedVisits(): Promise<Visit[]> {
-    const visitsRef = collection(db, "visits");
-    const q = query(
-        visitsRef,
-        where("status", "==", "completed"),
-        orderBy("completedAt", "desc")
-    );
-    const querySnapshot = await getDocs(q);
-
-    return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-    })) as Visit[];
-}
-
-export async function getVisitById(visitId: string): Promise<Visit | null> {
-    const visitRef = doc(db, "visits", visitId);
-    const visitSnap = await getDoc(visitRef);
-
-    if (!visitSnap.exists()) {
-        return null;
-    }
-
-    return {
-        id: visitSnap.id,
-        ...visitSnap.data(),
-    } as Visit;
-}
+// ... (existing code)
 
 export async function createVisit(
     visit: Omit<Visit, "id" | "createdAt" | "ratings">
@@ -125,10 +54,34 @@ export async function createVisit(
     const visitsRef = collection(db, "visits");
     const docRef = await addDoc(visitsRef, {
         ...visit,
+        confirmationStatus: 'pending', // Always pending initially
+        proposedBy: visit.userId, // Creator proposes first
         ratings: {}, // Initialize empty ratings
         createdAt: Timestamp.now(),
     });
     return docRef.id;
+}
+
+// NEW: Function to handle rescheduling/proposal logic
+export async function updateVisitDate(
+    visitId: string,
+    newDate: Date,
+    proposedBy: "ara" | "jeremy"
+): Promise<void> {
+    const docRef = doc(db, "visits", visitId);
+    await updateDoc(docRef, {
+        visitDate: Timestamp.fromDate(newDate),
+        confirmationStatus: 'pending', // Revert to pending on change
+        proposedBy: proposedBy, // Flip responsibility
+    });
+}
+
+// NEW: Function to confirm a visit
+export async function confirmVisit(visitId: string): Promise<void> {
+    const docRef = doc(db, "visits", visitId);
+    await updateDoc(docRef, {
+        confirmationStatus: 'confirmed'
+    });
 }
 
 export async function completeVisit(

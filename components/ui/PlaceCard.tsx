@@ -28,6 +28,8 @@ export interface Visit {
     userId: "ara" | "jeremy"; // Creator
     visitDate: Date;
     status: "planned" | "completed";
+    confirmationStatus?: 'pending' | 'confirmed';
+    proposedBy?: "ara" | "jeremy";
     ratings: Record<string, Rating>;
 }
 
