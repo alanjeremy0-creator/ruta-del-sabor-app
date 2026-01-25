@@ -94,7 +94,7 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule, 
         return (
             <div className="card-pixel mb-6 border-2 border-purple bg-surface/50 overflow-hidden relative animate-pulse">
                 {/* Decoration */}
-                <div className="absolute top-0 right-0 w-full h-1 bg-purple animate-pulse" />
+                <div className="absolute top-0 right-0 w-full h-1.5 bg-gradient-to-r from-purple-500 via-[var(--pixel-cyan)] to-[var(--pixel-pink)] animate-pulse" />
 
                 <div className="p-4 flex items-center gap-4">
                     <div className="w-12 h-12 relative">
