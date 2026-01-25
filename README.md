@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ruta del Sabor 🌮
 
-## Getting Started
+Tu bitácora gastronómica en Toluca - Una PWA Neo-Retro con estética Pixel Art.
 
-First, run the development server:
+## 🚀 Quick Start
 
 ```bash
+# Instalar dependencias
+npm install
+
+# Copiar variables de entorno
+cp .env.local.example .env.local
+
+# Iniciar servidor de desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🔧 Configuración
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 1. Firebase
 
-## Learn More
+1. Ve a [Firebase Console](https://console.firebase.google.com)
+2. Crea un nuevo proyecto o usa uno existente
+3. Agrega una Web App
+4. Copia las credenciales a `.env.local`
+5. Habilita Firestore Database
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Google Maps API
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Ve a [Google Cloud Console](https://console.cloud.google.com)
+2. Crea un proyecto o usa uno existente
+3. Habilita las APIs:
+   - Maps JavaScript API
+   - Places API
+4. Crea una API Key en Credentials
+5. Restringe la key a tus dominios
+6. Copia la key a `.env.local`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📁 Estructura
 
-## Deploy on Vercel
+```
+ruta-del-sabor/
+├── app/                 # Next.js App Router pages
+├── components/          # React components
+│   ├── ui/             # UI components (PlaceCard, StarRating, etc.)
+│   ├── layout/         # Layout components (Header)
+│   ├── avatar/         # Avatar Builder components
+│   └── map/            # Google Maps components
+├── hooks/              # React hooks
+├── lib/                # Utilities (Firebase, Firestore, Google Maps)
+└── public/pixels/      # Pixel art assets
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🎨 Design System
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Fonts**: Space Grotesk (headings), Inter (body)
+- **Colors**: Off-white base, pixel accents (gold, salmon, sage)
+- **Style**: Neo-Retro with 16-bit pixel art icons
+
+## 📱 Features
+
+- [x] Onboarding con selección de usuario
+- [x] Dashboard con próxima parada y bitácora
+- [x] Agregar planes (búsqueda + fecha)
+- [x] Calificar visitas con estrellas
+- [x] Confeti pixelado 🎉
+- [ ] Integración Google Maps
+- [ ] Avatar Builder completo
+- [ ] Push Notifications
+
+## 🚀 Deploy
+
+```bash
+npm run build
+```
+
+Deploy en Netlify conectando tu repositorio.
+
+---
+
+Hecho con ❤️ para Ara y Jeremy

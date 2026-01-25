@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Minimalist Pixel Heart Favicon -->
+  <g fill="#FF6B9D" transform="translate(1, 1)">
+    <!-- Main shape -->
+    <path d="M4 4h4v4h-4z M10 4h4v4h-4z" /> <!-- Top bumps -->
+    <path d="M2 8h4v4h-4z M6 8h4v4h-4z M10 8h4v4h-4z M14 8h2v4h-2z" /> <!-- Middle -->
+    <path d="M4 12h4v4h-4z M8 12h4v4h-4z M12 12h2v4h-2z" /> <!-- Middle lower -->
+    <path d="M6 16h6v4h-6z" /> <!-- Lower -->
+    <path d="M8 20h2v2h-2z" /> <!-- Point -->
+    
+    <!-- Shine/Highlight (White) -->
+    <path d="M4 6h2v2h-2z" fill="#FFFFFF" opacity="0.6" />
+    <path d="M6 6h2v2h-2z" fill="#FFFFFF" opacity="0.3" />
+  </g>
+</svg>

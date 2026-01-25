@@ -1,65 +1,286 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Header } from "@/components/layout/Header";
+import { PlaceCard } from "@/components/ui/PlaceCard";
+import { Toast } from "@/components/ui/Toast";
+import { PixelConfetti } from "@/components/ui/PixelConfetti";
+import { useUser, getAllUsersWithAvatars } from "@/hooks/useUser";
+import { FoodIcon } from "@/components/ui/FoodIcons";
+import { FoodEmblem } from "@/components/ui/FoodEmblem";
+import { PixelHeartAnimated } from "@/components/ui/PixelHeart";
+import { useVisits } from "@/hooks/useVisits";
+import { deleteAllVisits } from "@/lib/cleanup";
+
+export default function HomePage() {
+  const router = useRouter();
+  const { user, isLoading: userLoading, needsOnboarding } = useUser();
+  const { plannedVisits, completedVisits, isLoading: visitsLoading, refreshVisits } = useVisits();
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [allUsers, setAllUsers] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    if (!userLoading && needsOnboarding) {
+      router.push("/onboarding");
+    }
+  }, [userLoading, needsOnboarding, router]);
+
+  // Load all users with their custom avatars
+  useEffect(() => {
+    setAllUsers(getAllUsersWithAvatars());
+  }, [user]); // Re-run when user changes (after onboarding)
+
+  const handleAddPlan = () => {
+    router.push("/add");
+  };
+
+  const handleRate = (visitId: string) => {
+    router.push(`/rate/${visitId}`);
+  };
+
+  // Buffer: 10 minutes after the visit time before showing in "calificar"
+  const BUFFER_MINUTES = 10;
+
+  // Auto-refresh: Check every 2 minutes to keep sync with partner's actions
+  useEffect(() => {
+    const REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes
+
+    const interval = setInterval(() => {
+      // console.log("🔄 Auto-refreshing dashboard...");
+      refreshVisits();
+    }, REFRESH_INTERVAL);
+
+    // Initial check is done by useVisits on mount, so we just set the interval
+    return () => clearInterval(interval);
+  }, [refreshVisits]);
+
+  // Helper: Check if visit is past the buffer time (10 min after scheduled)
+  const isVisitPastBuffer = (visitDate: Date) => {
+    const bufferTime = new Date(visitDate).getTime() + (BUFFER_MINUTES * 60 * 1000);
+    return Date.now() > bufferTime;
+  };
+
+  // --- FILTER LOGIC ---
+
+  // 1. Next Visit: Earliest planned visit that is NOT past buffer
+  const nextVisit = plannedVisits.find(v => !isVisitPastBuffer(new Date(v.visitDate)));
+
+  // 2. Visits To Rate:
+  //    - Planned visits that ARE past buffer
+  //    - Completed visits (someone rated) where CURRENT USER hasn't rated yet
+  //    Sorted by most recent
+  const visitsToRate = [
+    ...plannedVisits.filter((v) => isVisitPastBuffer(new Date(v.visitDate))),
+    ...completedVisits.filter((v) => user && v.ratings && !v.ratings[user.id])
+  ].sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime());
+
+  // 3. History:
+  //    - Visits where CURRENT USER has rated (or implicitly any completed visit)
+  //    User requested: "Si aun no califique uno que se muestre la calificación de quien califico... esperando"
+  //    So we show ALL completed visits here. The PlaceCard will handle the "Waiting" UI for my missing rating.
+  //    BUT to avoid duplication with "Visits To Rate", maybe we exclude it?
+  //    The user explicitly said: "Para pasar a Nuestra Ruta... si, pero cuando aún no califique uno...".
+  //    This implies it IS in "Nuestra Ruta".
+  //    If it's also in "Visits To Rate", it appears twice.
+  //    Let's keep it in "Nuestra Ruta" IF at least one person rated (so it's in completedVisits).
+  //    AND we keep it in "Visits To Rate" as an actionable item.
+  //    Ideally, if I haven't rated, it's a TASK, so "Que tal estuvo" is the right place.
+  //    Let's put it in "History" ONLY if I have rated OR if both have rated?
+  //    No, user wants to see what the OTHER person rated while waiting for me.
+  //    Okay, I will include it in both for now, or maybe filtering logic:
+  //    - If I haven't rated, showing it in History is okay (as "Shared Log").
+  //    - It acts as a reminder in "Que tal estuvo".
+  const historyVisits = completedVisits;
+
+  const isLoading = userLoading || visitsLoading;
+
+  // Get icon for next visit
+  const NextIcon = nextVisit ? (
+    require("@/components/ui/FoodIcons").categoryIcons[nextVisit.place.category] || FoodIcon
+  ) : FoodIcon;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pb-20">
+        <Header />
+        <main className="max-w-lg mx-auto p-4 space-y-8">
+          {/* Skeleton Loaders */}
+          <section className="animate-pulse">
+            <div className="h-6 w-32 bg-gray-700 rounded mb-4"></div>
+            <div className="h-4 w-48 bg-gray-800 rounded mb-4"></div>
+            <div className="h-32 bg-gray-800 rounded-lg border-2 border-gray-700"></div>
+          </section>
+
+          <section className="animate-pulse">
+            <div className="h-6 w-40 bg-gray-700 rounded mb-4"></div>
+            <div className="h-24 bg-gray-800 rounded mb-4"></div>
+            <div className="h-24 bg-gray-800 rounded mb-4"></div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen pb-20">
+      <Header />
+
+      <main className="max-w-lg mx-auto p-4 space-y-8">
+        {/* === PRÓXIMA PARADA === */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-space font-bold text-purple text-lg">Próxima Parada</h2>
+            <PixelHeartAnimated />
+          </div>
+          <p className="text-sm text-muted mb-4">
+            A donde nos quieres llevar, pero llegas temprano porfis 🙏🏼
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+
+          {!nextVisit ? (
+            <div className="card-pixel p-8 text-center border-dashed">
+              <div className="w-16 h-16 mx-auto mb-4 bg-surface rounded-full flex items-center justify-center text-3xl">
+                🗺️
+              </div>
+              <div className="mb-4">
+                <p className="font-space font-bold text-muted">No hay ningún plan todavía</p>
+                <p className="text-xs text-muted opacity-80 mt-1">(agregalo andale 🥺)</p>
+              </div>
+              <div className="sparkle-button-wrapper">
+                <span className="sparkle-star sparkle-star-1" style={{ color: "#22d3d1" }}>✦</span>
+                <span className="sparkle-star sparkle-star-2" style={{ color: "#22d3d1" }}>✦</span>
+                <span className="sparkle-star sparkle-star-3" style={{ color: "#06b6d4" }}>★</span>
+                <span className="sparkle-star sparkle-star-4" style={{ color: "#22d3d1" }}>✦</span>
+                <button
+                  onClick={handleAddPlan}
+                  className="btn-pixel text-sm"
+                  style={{ background: "#06b6d4", color: "#0f172a" }}
+                >
+                  + Agregar plan
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              onClick={() => router.push(`/place/${nextVisit.place.id}`)}
+              className="cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-purple/20 active:scale-[0.98] transition-all duration-300 relative group"
+            >
+              {/* Custom interactive card for Next Visit */}
+              <div className="card-pixel border-2 border-purple/50 group-hover:border-purple relative z-10 bg-surface">
+                <div className="p-4 flex items-center gap-4">
+                  <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
+                    <NextIcon size={32} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-lg text-white group-hover:text-purple transition-colors truncate">
+                      {nextVisit.place.name}
+                    </h3>
+                    <p className="text-xs text-muted mt-1 uppercase tracking-wider line-clamp-2">
+                      {nextVisit.place.address}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2 text-purple font-bold text-sm">
+                      <span>{new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(nextVisit.visitDate))}</span>
+                      {(() => {
+                        const visitTime = new Date(nextVisit.visitDate).getTime();
+                        const now = Date.now();
+                        const diffMinutes = (visitTime - now) / (1000 * 60);
+
+                        // Show "¡Es ahora!" only if within 10 minutes BEFORE the visit time (green)
+                        if (diffMinutes > 0 && diffMinutes <= 10) {
+                          return <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full animate-pulse">¡Es ahora!</span>;
+                        } else if (diffMinutes > 10) {
+                          // Show time remaining (yellow) - up to 24 hours before
+                          const hours = Math.floor(diffMinutes / 60);
+                          const mins = Math.floor(diffMinutes % 60);
+                          const timeText = hours > 0
+                            ? `En ${hours}h ${mins > 0 ? `${mins}m` : ''}`
+                            : `En ${mins}m`;
+                          return <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full animate-pulse">{timeText}</span>;
+                        } else if (diffMinutes <= 0) {
+                          // Time has arrived or passed - enjoying the meal (aqua)
+                          return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">🍽️ Disfrútalo</span>;
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+                  <div className="text-purple opacity-50 group-hover:opacity-100 transition-opacity">
+                    &gt;
+                  </div>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-purple/20 blur-xl rounded-lg -z-0 opacity-0 group-hover:opacity-50 transition-opacity" />
+            </div>
+          )}
+        </section>
+
+        {/* === ¿QUÉ TAL ESTUVO? === */}
+        {visitsToRate.length > 0 && (
+          <section>
+            <h2 className="font-space font-bold text-pink text-lg mb-2">¿Qué tal estuvo?</h2>
+            <p className="text-sm text-muted mb-4">
+              Ya disfrutamos la comida, tal vez mamonie, pero ya platicamos nuestra calificación, ahora calificalá aquí 😉 📝
+            </p>
+            <div className="space-y-4">
+              {visitsToRate.map((visit) => (
+                <PlaceCard
+                  key={visit.id}
+                  visit={visit}
+                  currentUserId={user?.id}
+                  onRate={handleRate}
+                  users={allUsers}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* === NUESTRA RUTA === */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-space font-bold text-gold text-lg">Nuestra Ruta del Sabor</h2>
+            <PixelHeartAnimated />
+          </div>
+          <p className="text-sm text-muted mb-4">
+            Aquí está lo que ya hemos visitado 😊
+          </p>
+
+          {historyVisits.length === 0 ? (
+            <div className="p-8 text-center opacity-50">
+              <div className="text-4xl mb-2">🍽️</div>
+              <p className="text-sm">Aún no han visitado ningún lugar juntos</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {historyVisits.map((visit) => (
+                <PlaceCard
+                  key={visit.id}
+                  visit={visit}
+                  currentUserId={user?.id}
+                  users={allUsers}
+                // blocked by UI usually
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
       </main>
-    </div>
+
+      {/* Toast Notification */}
+      {
+        toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )
+      }
+
+      <PixelConfetti isActive={showConfetti} />
+    </div >
   );
 }

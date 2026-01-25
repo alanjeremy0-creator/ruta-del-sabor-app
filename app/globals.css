@@ -1,26 +1,595 @@
 @import "tailwindcss";
 
+/* ========================================
+   RUTA DEL SABOR - NEO-RETRO PIXEL ART UI
+   Inspired by: Milady Anti Protocol
+   Dark Space + Pixel Art Aesthetic
+   ======================================== */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Background - Deep Space Purple */
+  --bg-base: #0D0B1E;
+  --bg-secondary: #1A1632;
+  --surface: #252042;
+
+  /* Text */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A89EC9;
+  --text-muted: #6B5F8A;
+
+  /* Borders - Pixel Style */
+  --border: #3D3666;
+  --border-light: #4A4275;
+
+  /* Pixel Accent Colors */
+  --pixel-pink: #FF6B9D;
+  --pixel-magenta: #FF3CAC;
+  --pixel-gold: #FFD93D;
+  --pixel-sage: #7ED957;
+  --pixel-cyan: #00D9FF;
+  --pixel-purple: #B967FF;
+
+  /* Shadows */
+  --shadow-pixel: 4px 4px 0px rgba(0, 0, 0, 0.5);
+  --shadow-glow-pink: 0 0 20px rgba(255, 107, 157, 0.3);
+  --shadow-glow-gold: 0 0 15px rgba(255, 217, 61, 0.4);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Colors */
+  --color-base: var(--bg-base);
+  --color-secondary: var(--bg-secondary);
+  --color-surface: var(--surface);
+  --color-primary: var(--text-primary);
+  --color-muted: var(--text-secondary);
+  --color-border: var(--border);
+  --color-pink: var(--pixel-pink);
+  --color-magenta: var(--pixel-magenta);
+  --color-gold: var(--pixel-gold);
+  --color-sage: var(--pixel-sage);
+  --color-cyan: var(--pixel-cyan);
+  --color-purple: var(--pixel-purple);
+
+  /* Fonts */
+  --font-space: var(--font-space-grotesk);
+  --font-inter: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ============ BASE STYLES ============ */
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  min-height: 100dvh;
+}
+
+/* Space Background with Stars */
+.bg-space {
+  background:
+    radial-gradient(ellipse at top, #1A1632 0%, #0D0B1E 50%),
+    linear-gradient(to bottom, #0D0B1E 0%, #1A1632 100%);
+  position: relative;
+}
+
+.bg-space::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.4), transparent),
+    radial-gradient(2px 2px at 160px 120px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 200px 60px, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(2px 2px at 280px 90px, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(1px 1px at 320px 150px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(2px 2px at 400px 30px, rgba(255, 255, 255, 0.2), transparent);
+  background-repeat: repeat;
+  background-size: 400px 200px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============ TYPOGRAPHY ============ */
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Pixel Font Effect for Headings */
+.pixel-text {
+  text-shadow:
+    2px 2px 0px rgba(0, 0, 0, 0.8),
+    -1px -1px 0px rgba(255, 255, 255, 0.1);
+}
+
+.text-glow-pink {
+  text-shadow: 0 0 10px var(--pixel-pink), 0 0 20px var(--pixel-pink);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 10px var(--pixel-gold), 0 0 20px var(--pixel-gold);
+}
+
+/* ============ PIXEL BORDERS ============ */
+
+/* Classic 8-bit button border using clip-path */
+.pixel-border {
+  position: relative;
+  clip-path: polygon(0 4px,
+      4px 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      calc(100% - 4px) 4px,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      4px calc(100% - 4px),
+      0 calc(100% - 4px));
+}
+
+/* Pixel border outline effect */
+.pixel-outline {
+  position: relative;
+}
+
+.pixel-outline::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: var(--border);
+  clip-path: polygon(0 4px,
+      4px 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      calc(100% - 4px) 4px,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      4px calc(100% - 4px),
+      0 calc(100% - 4px));
+  z-index: -1;
+}
+
+/* ============ BUTTONS ============ */
+
+/* Primary Pixel Button - Pink */
+.btn-pixel {
+  background: var(--pixel-pink);
+  color: #0D0B1E;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 24px;
+  border: none;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  clip-path: polygon(0 4px,
+      4px 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      calc(100% - 4px) 4px,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      4px calc(100% - 4px),
+      0 calc(100% - 4px));
+}
+
+.btn-pixel:hover {
+  background: var(--pixel-magenta);
+  transform: translateY(-2px);
+}
+
+.btn-pixel:active {
+  transform: translateY(2px);
+}
+
+/* Sparkle effect for primary buttons */
+.btn-pixel::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent);
+  transform: translateY(-50%) skewX(-25deg);
+  animation: btn-sparkle 3s ease-in-out infinite;
+}
+
+/* Sparkle dots decoration */
+.btn-pixel::after {
+  content: "✦";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  animation: sparkle-pulse 1.5s ease-in-out infinite;
+  text-shadow: 0 0 4px var(--pixel-pink);
+}
+
+@keyframes btn-sparkle {
+
+  0%,
+  100% {
+    left: -100%;
+    opacity: 0;
+  }
+
+  50% {
+    left: 100%;
+    opacity: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes sparkle-pulse {
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* SparkleButton wrapper with external stars */
+.sparkle-button-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.sparkle-star {
+  position: absolute;
+  font-size: 12px;
+  color: var(--pixel-pink);
+  text-shadow: 0 0 6px var(--pixel-pink), 0 0 12px var(--pixel-magenta);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sparkle-star-1 {
+  top: -12px;
+  left: -8px;
+  animation: star-float-1 2s ease-in-out infinite;
+}
+
+.sparkle-star-2 {
+  top: -10px;
+  right: -10px;
+  font-size: 14px;
+  animation: star-float-2 2.5s ease-in-out infinite;
+}
+
+.sparkle-star-3 {
+  bottom: -10px;
+  left: 20%;
+  font-size: 10px;
+  color: var(--pixel-gold);
+  text-shadow: 0 0 6px var(--pixel-gold), 0 0 12px #FFB800;
+  animation: star-float-3 1.8s ease-in-out infinite;
+}
+
+.sparkle-star-4 {
+  bottom: -8px;
+  right: 15%;
+  font-size: 11px;
+  animation: star-float-4 2.2s ease-in-out infinite;
+}
+
+@keyframes star-float-1 {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: translateY(-4px) scale(1.3);
+    opacity: 1;
+  }
+}
+
+@keyframes star-float-2 {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateY(-3px) rotate(15deg) scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes star-float-3 {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(0.9);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: translateY(3px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes star-float-4 {
+
+  0%,
+  100% {
+    transform: translateX(0) scale(1);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: translateX(3px) scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Secondary Pixel Button - Purple/Outline */
+.btn-pixel-secondary {
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 24px;
+  border: 2px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  clip-path: polygon(0 4px,
+      4px 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      calc(100% - 4px) 4px,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      4px calc(100% - 4px),
+      0 calc(100% - 4px));
+}
+
+.btn-pixel-secondary:hover {
+  border-color: var(--pixel-purple);
+  background: rgba(185, 103, 255, 0.1);
+}
+
+/* FAB Button */
+.btn-fab {
+  background: var(--pixel-pink);
+  box-shadow: var(--shadow-pixel), var(--shadow-glow-pink);
+  transition: all 0.15s ease;
+  clip-path: polygon(0 4px,
+      4px 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      calc(100% - 4px) 4px,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      4px calc(100% - 4px),
+      0 calc(100% - 4px));
+}
+
+.btn-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 107, 157, 0.5);
+}
+
+.btn-fab:active {
+  transform: translateY(2px);
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+}
+
+/* ============ CARDS ============ */
+
+.card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  position: relative;
+}
+
+/* Pixel Art Card with corner notches */
+.card-pixel {
+  background: var(--surface);
+  border: 2px solid var(--border-light);
+  position: relative;
+  clip-path: polygon(0 8px,
+      8px 8px,
+      8px 0,
+      calc(100% - 8px) 0,
+      calc(100% - 8px) 8px,
+      100% 8px,
+      100% calc(100% - 8px),
+      calc(100% - 8px) calc(100% - 8px),
+      calc(100% - 8px) 100%,
+      8px 100%,
+      8px calc(100% - 8px),
+      0 calc(100% - 8px));
+}
+
+.card-pixel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Card with glow effect */
+.card-glow {
+  box-shadow: 0 0 0 1px var(--border), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.card-glow:hover {
+  box-shadow: 0 0 0 1px var(--pixel-purple), 0 0 20px rgba(185, 103, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ============ PIXEL ART IMAGES ============ */
+
+.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Icon container with dark background to mask transparency issues */
+.icon-container {
+  background: linear-gradient(135deg, #1A1632 0%, #252042 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Avatar container with matching background */
+.avatar-container {
+  background: linear-gradient(135deg, #252042 0%, #1A1632 100%);
+  overflow: hidden;
+}
+
+/* ============ STAR RATING ============ */
+
+.star-bounce {
+  animation: starBounce 0.3s ease;
+}
+
+@keyframes starBounce {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+/* ============ CONFETTI ============ */
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100%) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.confetti-piece {
+  animation: confettiFall 2s ease-out forwards;
+}
+
+/* ============ MODAL ============ */
+
+.modal-overlay {
+  background: rgba(13, 11, 30, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+/* ============ TOAST ============ */
+
+.toast {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ============ SCROLLBAR ============ */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pixel-purple);
+}
+
+/* ============ UTILITIES ============ */
+
+.gradient-text-pink {
+  background: linear-gradient(90deg, var(--pixel-pink), var(--pixel-magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass-dark {
+  background: rgba(37, 32, 66, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(61, 54, 102, 0.5);
+}
+
+/* ============ HIDE GOOGLE MAPS WARNING ============ */
+/* Hide the "This page can't load Google Maps correctly" modal */
+.gm-err-container,
+.gm-err-content,
+.gm-err-autocomplete,
+.dismissButton,
+div[style*="background-color: white"][style*="border-radius"]>div:first-child {
+  display: none !important;
+}
+
+/* Also hide the backdrop/overlay of the warning */
+.pac-container~div[style*="position: fixed"] {
+  display: none !important;
 }
