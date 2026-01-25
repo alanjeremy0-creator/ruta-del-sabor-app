@@ -47,6 +47,8 @@ export function useVisits() {
                         userId: visit.userId,
                         visitDate: visit.visitDate.toDate(),
                         status: visit.status,
+                        confirmationStatus: visit.confirmationStatus, // Pass through new field
+                        proposedBy: visit.proposedBy, // Pass through new field
                         ratings: visit.ratings || {},
                     };
                     return v;
