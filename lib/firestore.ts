@@ -46,7 +46,80 @@ export interface Visit {
     completedAt?: Timestamp; // Time of first completion? Or update every time?
 }
 
-// ... (existing code)
+// Places
+export async function getPlace(placeId: string): Promise<Place | null> {
+    const docRef = doc(db, "places", placeId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Place;
+    }
+    return null;
+}
+
+export async function savePlace(place: Omit<Place, "createdAt">): Promise<void> {
+    const docRef = doc(db, "places", place.id);
+    await setDoc(docRef, {
+        ...place,
+        createdAt: Timestamp.now(),
+    });
+}
+
+// Visits
+export async function getVisits(): Promise<Visit[]> {
+    const visitsRef = collection(db, "visits");
+    const q = query(visitsRef, orderBy("visitDate", "desc"));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+    })) as Visit[];
+}
+
+export async function getPlannedVisits(): Promise<Visit[]> {
+    const visitsRef = collection(db, "visits");
+    const q = query(
+        visitsRef,
+        where("status", "==", "planned"),
+        orderBy("visitDate", "asc")
+    );
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+    })) as Visit[];
+}
+
+export async function getCompletedVisits(): Promise<Visit[]> {
+    const visitsRef = collection(db, "visits");
+    const q = query(
+        visitsRef,
+        where("status", "==", "completed"),
+        orderBy("completedAt", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+    })) as Visit[];
+}
+
+export async function getVisitById(visitId: string): Promise<Visit | null> {
+    const visitRef = doc(db, "visits", visitId);
+    const visitSnap = await getDoc(visitRef);
+
+    if (!visitSnap.exists()) {
+        return null;
+    }
+
+    return {
+        id: visitSnap.id,
+        ...visitSnap.data(),
+    } as Visit;
+}
 
 export async function createVisit(
     visit: Omit<Visit, "id" | "createdAt" | "ratings">
