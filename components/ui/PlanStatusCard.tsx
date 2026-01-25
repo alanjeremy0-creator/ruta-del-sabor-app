@@ -118,7 +118,7 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule, 
                             Esperando a {partnerName}...
                         </h3>
                         <p className="text-xs text-muted leading-tight mt-1">
-                            Le enviamos la propuesta. Te avisaremos en cuanto confirme. 👀
+                            {partnerName} ya sabe el plan. A ver cuánto tarda en confirmar (no te desesperes, siiii). ⏳💖
                         </p>
                     </div>
                 </div>
