@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
+import MaintenanceScreen from "../components/MaintenanceScreen";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -17,12 +18,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Ruta del Sabor",
   description: "Tu bitácora gastronómica en Toluca",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Ruta del Sabor",
-  },
+  // manifest: "/manifest.json",
+  // appleWebApp: {
+  //   capable: true,
+  //   statusBarStyle: "black-translucent",
+  //   title: "Ruta del Sabor",
+  // },
 };
 
 export const viewport: Viewport = {
@@ -42,8 +43,11 @@ export default function RootLayout({
       <body
         className={`${spaceGrotesk.variable} ${inter.variable} antialiased bg-base text-primary font-inter bg-space`}
       >
-        <div className="relative z-10">
+        {/* <div className="relative z-10">
           {children}
+        </div> */}
+        <div className="relative z-10">
+          <MaintenanceScreen />
         </div>
       </body>
     </html>

@@ -10,7 +10,8 @@ import {
     where,
     orderBy,
     Timestamp,
-    setDoc
+    setDoc,
+    arrayUnion
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -42,6 +43,7 @@ export interface Visit {
     confirmationStatus?: 'pending' | 'confirmed'; // New field for Option B
     proposedBy?: "ara" | "jeremy"; // New field for ping-pong
     ratings: Record<string, Rating>; // Map by userId
+    photos?: string[]; // Array of photo URLs
     createdAt: Timestamp;
     completedAt?: Timestamp; // Time of first completion? Or update every time?
 }
@@ -178,6 +180,13 @@ export async function completeVisit(
         status: "completed", // Always mark as completed (at least partial)
         [`ratings.${userId}`]: newRating,
         completedAt: Timestamp.now(), // Update latest activity
+    });
+}
+
+export async function addVisitPhoto(visitId: string, photoUrl: string): Promise<void> {
+    const docRef = doc(db, "visits", visitId);
+    await updateDoc(docRef, {
+        photos: arrayUnion(photoUrl)
     });
 }
 

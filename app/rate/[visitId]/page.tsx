@@ -9,6 +9,7 @@ import { categoryIcons, FoodIcon } from "@/components/ui/FoodIcons";
 import { FoodEmblem } from "@/components/ui/FoodEmblem";
 import { getVisitById, getPlace, completeVisit, type Visit, type Place, type Rating } from "@/lib/firestore";
 import { useUser } from "@/hooks/useUser";
+import { PhotoUploadModal } from "@/components/ui/PhotoUploadModal";
 
 interface HydratedVisit {
     id: string;
@@ -30,6 +31,7 @@ export default function RatePage({ params }: { params: Promise<{ visitId: string
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showConfetti, setShowConfetti] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
 
     // Fetch the visit and its place data
     useEffect(() => {
@@ -94,11 +96,16 @@ export default function RatePage({ params }: { params: Promise<{ visitId: string
 
             setShowConfetti(true);
             setIsSubmitting(false);
-            setShowSuccess(true);
 
-            setTimeout(() => {
-                router.push("/");
-            }, 3000);
+            // Instead of success immediately, show modal
+            setShowPhotoModal(true);
+            // Logic continues in modal callbacks
+            /*
+                        setShowSuccess(true);
+                        setTimeout(() => {
+                            router.push("/");
+                        }, 3000);
+            */
         } catch (error) {
             console.error("Error completing visit:", error);
             alert("Error al guardar la calificación. Checa la consola.");
@@ -287,6 +294,24 @@ export default function RatePage({ params }: { params: Promise<{ visitId: string
             </main>
 
             <PixelConfetti isActive={showConfetti} />
+
+            {/* Photo Modal Integration */}
+            {visit && (
+                <PhotoUploadModal
+                    isOpen={showPhotoModal}
+                    visitId={visit.id}
+                    onClose={() => {
+                        setShowPhotoModal(false);
+                        setShowSuccess(true); // Show success screen after modal
+                        setTimeout(() => router.push("/"), 2500);
+                    }}
+                    onSuccess={() => {
+                        setShowPhotoModal(false);
+                        setShowSuccess(true); // Show success screen after modal
+                        setTimeout(() => router.push("/"), 2500);
+                    }}
+                />
+            )}
         </div>
     );
 }

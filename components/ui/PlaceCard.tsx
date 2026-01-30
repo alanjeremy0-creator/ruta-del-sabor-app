@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
+
 import { StarRating } from "./StarRating";
 import { categoryIcons } from "./FoodIcons";
 import { DEFAULT_USERS } from "@/hooks/useUser";
 import Image from "next/image";
 import Link from "next/link";
+import { PhotoUploadModal } from "./PhotoUploadModal";
 
 export interface Place {
     id: string;
@@ -31,6 +34,7 @@ export interface Visit {
     confirmationStatus?: 'pending' | 'confirmed';
     proposedBy?: "ara" | "jeremy";
     ratings: Record<string, Rating>;
+    photos?: string[];
 }
 
 interface PlaceCardProps {
@@ -43,6 +47,8 @@ interface PlaceCardProps {
 export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProps) {
     const { place, status, ratings, visitDate } = visit;
     const isPast = new Date(visitDate) < new Date(); // Simple check, buffer handled in parent
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [photoModalMode, setPhotoModalMode] = useState<'view' | 'upload'>('view');
 
     // Use custom avatars if provided, otherwise fall back to defaults
     const araUser = users?.ara || DEFAULT_USERS.ara;
@@ -101,13 +107,16 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
                     <span className="text-pink">📅</span>
                     <span className="text-muted capitalize">{formatDate(visitDate)}</span>
                 </div>
-                <div className="w-px h-4 bg-border" />
                 <div className="flex items-center gap-2 text-sm">
                     <span className="text-pink">🕐</span>
                     <span className="text-muted">{formatTime(visitDate)}</span>
                 </div>
             </div>
 
+            {/* Photo Memories Section */}
+
+
+            {/* Ratings Section */}
             {/* Ratings Section */}
             <div className="p-4 bg-surface/30">
                 {hasRatings ? (
@@ -160,7 +169,7 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
                     </div>
                 )}
 
-                {/* Specific "Rate Now" button if current user hasn't rated yet but could */}
+                {/* Rate Now Button (if applicable) */}
                 {currentUserId && !ratings[currentUserId] && hasRatings && onRate && (
                     <div className="mt-4 flex justify-center">
                         <button
@@ -172,14 +181,48 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
                     </div>
                 )}
 
+                {/* Footer Actions (Critique + Photos) */}
                 {hasRatings && (
-                    <div className="mt-4 text-center">
-                        <Link href={`/place/${place.id}`} className="text-xs text-muted hover:text-pink transition-colors underline decoration-dotted">
+                    <div className="mt-4 flex items-center justify-center gap-4 text-xs">
+                        <Link href={`/place/${place.id}`} className="text-muted hover:text-pink transition-colors underline decoration-dotted">
                             Ver nuestra critica 🧐
                         </Link>
+
+                        <div className="w-1 h-1 rounded-full bg-gray-700" />
+
+                        <button
+                            onClick={() => {
+                                setPhotoModalMode(visit.photos && visit.photos.length > 0 ? 'view' : 'upload');
+                                setShowPhotoModal(true);
+                            }}
+                            className="text-muted hover:text-[var(--pixel-cyan)] transition-colors underline decoration-dotted flex items-center gap-1"
+                        >
+                            {visit.photos && visit.photos.length > 0 ? (
+                                <>
+                                    Ver recuerdos 📸
+                                </>
+                            ) : (
+                                <>
+                                    Agregar recuerdo ➕
+                                </>
+                            )}
+                        </button>
                     </div>
                 )}
             </div>
+
+            {/* Photo Modal */}
+            <PhotoUploadModal
+                isOpen={showPhotoModal}
+                onClose={() => setShowPhotoModal(false)}
+                visitId={visit.id}
+                onSuccess={() => {
+                    setShowPhotoModal(false);
+                    window.location.reload();
+                }}
+                initialMode={photoModalMode}
+                existingPhotos={visit.photos}
+            />
         </article>
     );
 }

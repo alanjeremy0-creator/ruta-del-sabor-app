@@ -47,8 +47,10 @@ export function useVisits() {
                         userId: visit.userId,
                         visitDate: visit.visitDate.toDate(),
                         status: visit.status,
-                        confirmationStatus: visit.confirmationStatus, // Pass through new field
-                        proposedBy: visit.proposedBy, // Pass through new field
+                        // Fix: Default to 'pending' if undefined so the flow activates for existing plans
+                        confirmationStatus: visit.confirmationStatus || 'pending',
+                        // Fix: Default to creator if proposedBy is missing
+                        proposedBy: visit.proposedBy || visit.userId,
                         ratings: visit.ratings || {},
                     };
                     return v;

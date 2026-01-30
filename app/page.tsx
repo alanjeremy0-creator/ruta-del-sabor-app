@@ -203,78 +203,83 @@ export default function HomePage() {
           ) : (
             <>
               {/* PENDING CONFIRMATION CARD */}
-              {pendingVisit && user && (
-                <PlanStatusCard
-                  visit={rawNextVisit}
-                  currentUserId={user.id}
-                  onConfirm={handleConfirmPlan}
-                  onReschedule={() => handleOpenReschedule(
-                    rawNextVisit.id,
-                    new Date(rawNextVisit.visitDate)
-                  )}
-                  users={allUsers}
-                />
-              )}
+              {pendingVisit ? (
+                user ? (
+                  <PlanStatusCard
+                    visit={rawNextVisit}
+                    currentUserId={user.id}
+                    onConfirm={handleConfirmPlan}
+                    onReschedule={() => handleOpenReschedule(
+                      rawNextVisit.id,
+                      new Date(rawNextVisit.visitDate)
+                    )}
+                    users={allUsers}
+                  />
+                ) : (
+                  // Fallback while user loads or if error
+                  <div className="card-pixel p-4 text-center animate-pulse">
+                    <p>Cargando estado del plan...</p>
+                  </div>
+                )
+              ) : (
+                /* MAIN PLAN CARD - Only visible if CONFIRMED (not pending) */
+                <div
+                  onClick={() => router.push(`/place/${rawNextVisit.place.id}`)}
+                  className="cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-purple/20 active:scale-[0.98] transition-all duration-300 relative group"
+                >
+                  {/* Custom interactive card for Next Visit */}
+                  <div className={`
+                        card-pixel border-2 relative z-10 bg-surface
+                        border-purple/50 group-hover:border-purple
+                    `}>
+                    <div className="p-4 flex items-center gap-4">
+                      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
+                        <NextIcon size={32} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg text-white group-hover:text-purple transition-colors truncate">
+                          {rawNextVisit.place.name}
+                        </h3>
+                        <p className="text-xs text-muted mt-1 uppercase tracking-wider line-clamp-2">
+                          {rawNextVisit.place.address}
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-purple font-bold text-sm">
+                          {/* Show Full Date: Jue 25 Ene, 3:00 p.m. */}
+                          <span className="capitalize">{new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(rawNextVisit.visitDate))}</span>
 
-              {/* MAIN PLAN CARD - Always visible and interactive so user can see details */}
-              <div
-                onClick={() => router.push(`/place/${rawNextVisit.place.id}`)}
-                className="cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-purple/20 active:scale-[0.98] transition-all duration-300 relative group"
-              >
-                {/* Custom interactive card for Next Visit */}
-                <div className={`
-                    card-pixel border-2 relative z-10 bg-surface
-                    ${showMainCard ? "border-purple/50 group-hover:border-purple" : "border-gold/50 border-dashed"}
-                `}>
-                  <div className="p-4 flex items-center gap-4">
-                    <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
-                      <NextIcon size={32} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg text-white group-hover:text-purple transition-colors truncate">
-                        {rawNextVisit.place.name}
-                      </h3>
-                      <p className="text-xs text-muted mt-1 uppercase tracking-wider line-clamp-2">
-                        {rawNextVisit.place.address}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-purple font-bold text-sm">
-                        {/* Show Full Date: Jue 25 Ene, 3:00 p.m. */}
-                        <span className="capitalize">{new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(rawNextVisit.visitDate))}</span>
+                          {(() => {
+                            const visitTime = new Date(rawNextVisit.visitDate).getTime();
+                            const now = Date.now();
+                            const diffMinutes = (visitTime - now) / (1000 * 60);
 
-                        {(() => {
-                          if (!showMainCard) return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">Por confirmar</span>;
-
-                          const visitTime = new Date(rawNextVisit.visitDate).getTime();
-                          const now = Date.now();
-                          const diffMinutes = (visitTime - now) / (1000 * 60);
-
-                          // Show "¡Es ahora!" only if within 10 minutes BEFORE the visit time (green)
-                          if (diffMinutes > 0 && diffMinutes <= 10) {
-                            return <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full animate-pulse">¡Es ahora!</span>;
-                          } else if (diffMinutes > 10) {
-                            // Show time remaining (yellow) - up to 24 hours before
-                            const hours = Math.floor(diffMinutes / 60);
-                            const mins = Math.floor(diffMinutes % 60);
-                            const timeText = hours > 0
-                              ? `En ${hours}h ${mins > 0 ? `${mins}m` : ''}`
-                              : `En ${mins}m`;
-                            return <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full animate-pulse">{timeText}</span>;
-                          } else if (diffMinutes <= 0) {
-                            // Time has arrived or passed - enjoying the meal (aqua)
-                            return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">🍽️ Disfrútalo</span>;
-                          }
-                          return null;
-                        })()}
+                            // Show "¡Es ahora!" only if within 10 minutes BEFORE the visit time (green)
+                            if (diffMinutes > 0 && diffMinutes <= 10) {
+                              return <span className="text-[10px] bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full animate-pulse">¡Es ahora!</span>;
+                            } else if (diffMinutes > 10) {
+                              // Show time remaining (yellow) - up to 24 hours before
+                              const hours = Math.floor(diffMinutes / 60);
+                              const mins = Math.floor(diffMinutes % 60);
+                              const timeText = hours > 0
+                                ? `En ${hours}h ${mins > 0 ? `${mins}m` : ''}`
+                                : `En ${mins}m`;
+                              return <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full animate-pulse">{timeText}</span>;
+                            } else if (diffMinutes <= 0) {
+                              // Time has arrived or passed - enjoying the meal (aqua)
+                              return <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full animate-pulse">🍽️ Disfrútalo</span>;
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      </div>
+                      <div className="text-purple opacity-50 group-hover:opacity-100 transition-opacity">
+                        &gt;
                       </div>
                     </div>
-                    <div className="text-purple opacity-50 group-hover:opacity-100 transition-opacity">
-                      &gt;
-                    </div>
                   </div>
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 bg-purple/20 blur-xl rounded-lg -z-0 opacity-0 group-hover:opacity-50 transition-opacity" />
                 </div>
-                {/* Glow effect */}
-                <div className="absolute inset-0 bg-purple/20 blur-xl rounded-lg -z-0 opacity-0 group-hover:opacity-50 transition-opacity" />
-              </div>
+              )}
 
               {/* BLOCKED 'ADD' BUTTON WITH MESSAGE */}
               {/* Since a plan exists (pending or confirmed), we show a disabled add button or just hide it? */}
