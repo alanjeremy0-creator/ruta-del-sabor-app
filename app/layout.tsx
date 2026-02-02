@@ -18,6 +18,10 @@ export const metadata: Metadata = {
   title: "Ruta del Sabor",
   description: "Tu bitácora gastronómica en Toluca",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
