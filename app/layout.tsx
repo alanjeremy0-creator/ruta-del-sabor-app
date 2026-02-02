@@ -14,13 +14,14 @@ const inter = Inter({
   weight: ["400", "500", "600"],
 });
 
-title: "Ruta del Sabor",
+export const metadata: Metadata = {
+  title: "Ruta del Sabor",
   description: "Tu bitácora gastronómica en Toluca",
-    manifest: "/manifest.json",
-      appleWebApp: {
-  capable: true,
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
     statusBarStyle: "black-translucent",
-      title: "Ruta del Sabor",
+    title: "Ruta del Sabor",
   },
 };
 
