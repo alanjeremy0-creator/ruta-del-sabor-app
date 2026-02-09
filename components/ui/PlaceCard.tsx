@@ -8,6 +8,7 @@ import { DEFAULT_USERS } from "@/hooks/useUser";
 import Image from "next/image";
 import Link from "next/link";
 import { PhotoUploadModal } from "./PhotoUploadModal";
+import { useGooglePlacePhoto } from "@/hooks/useGooglePlacePhoto";
 
 export interface Place {
     id: string;
@@ -49,6 +50,7 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
     const isPast = new Date(visitDate) < new Date(); // Simple check, buffer handled in parent
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [photoModalMode, setPhotoModalMode] = useState<'view' | 'upload'>('view');
+    const [imageError, setImageError] = useState(false);
 
     // Use custom avatars if provided, otherwise fall back to defaults
     const araUser = users?.ara || DEFAULT_USERS.ara;
@@ -84,12 +86,25 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
     // Icon
     const IconComponent = categoryIcons[place.category] || categoryIcons.food;
 
+    const googlePhotoUrl = useGooglePlacePhoto(place.id, place.photoReference);
+
     return (
         <article className="card-pixel rounded-none overflow-hidden card-glow transition-all mb-4">
             {/* Header */}
             <div className="p-4 pb-3 flex items-start gap-4">
-                <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-surface/50 rounded-lg border border-border">
-                    <IconComponent size={36} />
+                <div className="w-14 h-14 flex-shrink-0 rounded-lg border border-border overflow-hidden relative">
+                    {googlePhotoUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                            src={googlePhotoUrl}
+                            alt={place.name}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-surface/50">
+                            <IconComponent size={32} className="opacity-50" />
+                        </div>
+                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="font-space font-bold text-lg text-primary leading-tight">
@@ -114,7 +129,44 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
             </div>
 
             {/* Photo Memories Section */}
-
+            {visit.photos && visit.photos.length > 0 && (
+                <div className="px-4 pb-3 border-b border-border/50">
+                    <button
+                        onClick={() => {
+                            setPhotoModalMode('view');
+                            setShowPhotoModal(true);
+                        }}
+                        className="w-full"
+                    >
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-pink text-sm">💕</span>
+                            <span className="text-xs font-bold text-muted uppercase tracking-wider">
+                                Nuestros Recuerdos ({visit.photos.length})
+                            </span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {visit.photos.slice(0, 4).map((photoUrl, idx) => (
+                                <div
+                                    key={idx}
+                                    className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 border-border hover:border-pink transition-colors"
+                                >
+                                    <Image
+                                        src={photoUrl}
+                                        alt={`Recuerdo ${idx + 1}`}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                    {idx === 3 && visit.photos && visit.photos.length > 4 && (
+                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                            <span className="text-white font-bold text-sm">+{visit.photos.length - 4}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </button>
+                </div>
+            )}
 
             {/* Ratings Section */}
             {/* Ratings Section */}
@@ -190,23 +242,27 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
 
                         <div className="w-1 h-1 rounded-full bg-gray-700" />
 
-                        <button
-                            onClick={() => {
-                                setPhotoModalMode(visit.photos && visit.photos.length > 0 ? 'view' : 'upload');
-                                setShowPhotoModal(true);
-                            }}
-                            className="text-muted hover:text-[var(--pixel-cyan)] transition-colors underline decoration-dotted flex items-center gap-1"
-                        >
-                            {visit.photos && visit.photos.length > 0 ? (
-                                <>
-                                    Ver recuerdos 📸
-                                </>
-                            ) : (
-                                <>
-                                    Agregar recuerdo ➕
-                                </>
-                            )}
-                        </button>
+                        {visit.photos && visit.photos.length > 0 ? (
+                            <button
+                                onClick={() => {
+                                    setPhotoModalMode('view');
+                                    setShowPhotoModal(true);
+                                }}
+                                className="text-muted hover:text-[var(--pixel-cyan)] transition-colors underline decoration-dotted flex items-center gap-1"
+                            >
+                                Ver recuerdos 📸
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => {
+                                    setPhotoModalMode('upload');
+                                    setShowPhotoModal(true);
+                                }}
+                                className="text-muted hover:text-[var(--pixel-cyan)] transition-colors underline decoration-dotted flex items-center gap-1"
+                            >
+                                Agregar recuerdo ➕
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -214,16 +270,17 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
             {/* Photo Modal */}
             <PhotoUploadModal
                 isOpen={showPhotoModal}
-                onClose={() => setShowPhotoModal(false)}
                 visitId={visit.id}
+                initialMode={photoModalMode}
+                placeName={place.name}
+                onClose={() => setShowPhotoModal(false)}
                 onSuccess={() => {
                     setShowPhotoModal(false);
-                    window.location.reload();
+                    // Could trigger a refresh here if needed
                 }}
-                initialMode={photoModalMode}
                 existingPhotos={visit.photos}
             />
-        </article>
+        </article >
     );
 }
 

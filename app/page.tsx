@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useGooglePlacePhoto } from "@/hooks/useGooglePlacePhoto";
+import Image from "next/image";
 import { Header } from "@/components/layout/Header";
 import { PlaceCard } from "@/components/ui/PlaceCard";
 import { Toast } from "@/components/ui/Toast";
@@ -14,6 +16,7 @@ import { useVisits } from "@/hooks/useVisits";
 import { deleteAllVisits } from "@/lib/cleanup";
 import { PlanStatusCard } from "@/components/ui/PlanStatusCard";
 import { RescheduleModal } from "@/components/ui/RescheduleModal";
+import { sendPushNotification } from "@/app/actions/push";
 
 export default function HomePage() {
   const router = useRouter();
@@ -27,6 +30,32 @@ export default function HomePage() {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [rescheduleVisitId, setRescheduleVisitId] = useState<string | null>(null);
   const [rescheduleCurrentDate, setRescheduleCurrentDate] = useState<Date | undefined>(undefined);
+
+  // Buffer: 10 minutes after the visit time before showing in "calificar"
+  const BUFFER_MINUTES = 10;
+
+  // Helper: Check if visit is past the buffer time (10 min after scheduled)
+  const isVisitPastBuffer = (visitDate: Date) => {
+    const bufferTime = new Date(visitDate).getTime() + (BUFFER_MINUTES * 60 * 1000);
+    return Date.now() > bufferTime;
+  };
+
+  // 1. Next Visit: Earliest planned visit that is NOT past buffer
+  const rawNextVisit = plannedVisits.find(v => !isVisitPastBuffer(new Date(v.visitDate)));
+
+  // Hook call for the main confirmed plan photo
+  const nextVisitPhoto = useGooglePlacePhoto(rawNextVisit?.place.id, rawNextVisit?.place.photoReference);
+
+  // Auto-refresh: Check every 2 minutes to keep sync with partner's actions
+  useEffect(() => {
+    const REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes
+
+    const interval = setInterval(() => {
+      refreshVisits();
+    }, REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [refreshVisits]);
 
   useEffect(() => {
     if (!userLoading && needsOnboarding) {
@@ -48,9 +77,31 @@ export default function HomePage() {
   };
 
   // --- CONFIRMATION FLOW HANDLERS ---
+  // --- CONFIRMATION FLOW HANDLERS ---
   const handleConfirmPlan = async (visitId: string) => {
     try {
       await confirmVisit(visitId);
+
+      // --- SEND PUSH NOTIFICATION ---
+      const visit = plannedVisits.find(v => v.id === visitId);
+      if (visit && user) {
+        // Notify the person who Proposed the visit (or the Creator if proposedBy is missing)
+        // If *I* am confirming, I am notifying the *other* person.
+        // Usually, the person confirming is NOT the one who proposed it.
+        const targetUserId = visit.proposedBy || visit.userId;
+
+        // Defensive: Don't notify myself if I'm confirming my own plan (shouldn't happen in UI but good practice)
+        if (targetUserId !== user.id) {
+          const placeName = visit.place.name;
+          const notificationTitle = "✅ ¡Ya se armó!";
+          const notificationBody = `¡Siii! ${user.name} dijo que sí. Nos vemos en ${placeName} 💖.`;
+
+          sendPushNotification(targetUserId, notificationTitle, notificationBody, { url: '/' })
+            .catch(err => console.error("Failed to send push:", err));
+        }
+      }
+      // ------------------------------
+
       setToast({ message: "¡Cita confirmada! 🎉", type: "success" });
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2500);
@@ -71,6 +122,22 @@ export default function HomePage() {
     try {
       const newDate = new Date(`${date}T${time}`);
       await updateVisitDate(rescheduleVisitId, newDate, user.id);
+
+      // --- SEND PUSH NOTIFICATION ---
+      const visit = plannedVisits.find(v => v.id === rescheduleVisitId);
+      if (visit) {
+        // Notify the OTHER person
+        const otherUserId = user.id === "ara" ? "jeremy" : "ara";
+        const placeName = visit.place.name;
+
+        const notificationTitle = "📅 Cambio de planes...";
+        const notificationBody = `${user.name} dice que mejor otro día para ir a ${placeName}. Checa la nueva fecha 🗓️.`;
+
+        sendPushNotification(otherUserId, notificationTitle, notificationBody, { url: '/' })
+          .catch(err => console.error("Failed to send push:", err));
+      }
+      // ------------------------------
+
       setToast({ message: "Propuesta enviada 📨", type: "success" });
     } catch (err) {
       console.error(err)
@@ -79,32 +146,7 @@ export default function HomePage() {
   };
 
 
-  // Buffer: 10 minutes after the visit time before showing in "calificar"
-  const BUFFER_MINUTES = 10;
 
-  // Auto-refresh: Check every 2 minutes to keep sync with partner's actions
-  useEffect(() => {
-    const REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes
-
-    const interval = setInterval(() => {
-      // console.log("🔄 Auto-refreshing dashboard...");
-      refreshVisits();
-    }, REFRESH_INTERVAL);
-
-    // Initial check is done by useVisits on mount, so we just set the interval
-    return () => clearInterval(interval);
-  }, [refreshVisits]);
-
-  // Helper: Check if visit is past the buffer time (10 min after scheduled)
-  const isVisitPastBuffer = (visitDate: Date) => {
-    const bufferTime = new Date(visitDate).getTime() + (BUFFER_MINUTES * 60 * 1000);
-    return Date.now() > bufferTime;
-  };
-
-  // --- FILTER LOGIC ---
-
-  // 1. Next Visit: Earliest planned visit that is NOT past buffer
-  const rawNextVisit = plannedVisits.find(v => !isVisitPastBuffer(new Date(v.visitDate)));
 
   // Logic: If there is a "Pending" plan, show it. If it's "Confirmed" (or legacy), show the card.
   // The 'rawNextVisit' contains the visit object. We check status in the UI.
@@ -160,6 +202,9 @@ export default function HomePage() {
       </div>
     );
   }
+
+  // Hook call for the main confirmed plan photo
+
 
   return (
     <div className="min-h-screen pb-20">
@@ -233,8 +278,18 @@ export default function HomePage() {
                         border-purple/50 group-hover:border-purple
                     `}>
                     <div className="p-4 flex items-center gap-4">
-                      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
-                        <NextIcon size={32} />
+                      <div className="w-14 h-14 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20 relative overflow-hidden">
+                        {nextVisitPhoto ? (
+                          <Image
+                            src={nextVisitPhoto}
+                            alt={rawNextVisit.place.name}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <NextIcon size={32} />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-lg text-white group-hover:text-purple transition-colors truncate">

@@ -1,9 +1,8 @@
 "use client";
 
-import { useLoadScript, GoogleMap, Marker } from "@react-google-maps/api";
-import { useMemo } from "react";
-
-const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+import { useLoadScript } from "@react-google-maps/api";
+import { useMemo, useState, useEffect } from "react";
+import { LIBRARIES } from "@/lib/googleMaps";
 
 // Grayscale Retro Style
 const mapStyle = [
@@ -90,10 +89,21 @@ const mapStyle = [
 ];
 
 export function useGoogleMaps() {
-    const { isLoaded, loadError } = useLoadScript({
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
-        libraries,
-    });
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [loadError, setLoadError] = useState<Error | undefined>(undefined);
+
+    useEffect(() => {
+        const checkGoogle = () => {
+            if (typeof window !== "undefined" && window.google && window.google.maps) {
+                setIsLoaded(true);
+            }
+        };
+
+        checkGoogle();
+
+        const interval = setInterval(checkGoogle, 100);
+        return () => clearInterval(interval);
+    }, []);
 
     const options = useMemo(() => ({
         styles: mapStyle,
@@ -105,7 +115,7 @@ export function useGoogleMaps() {
         fullscreenControl: false,
         zoomControl: false,
         clickableIcons: false,
-        backgroundColor: "#1a1a2e", // Match our dark theme
+        backgroundColor: "#1a1a2e",
     }), []);
 
     return { isLoaded, loadError, options };

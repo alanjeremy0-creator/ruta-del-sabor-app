@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Upload, Camera, Plus } from "lucide-react";
+import { X, Upload, Camera, Plus, Trash2 } from "lucide-react";
 import { uploadVisitPhoto } from "@/lib/storage";
-import { addVisitPhoto } from "@/lib/firestore";
+import { addVisitPhoto, deleteVisitPhoto } from "@/lib/firestore";
 import Image from "next/image";
 import { createPortal } from "react-dom";
+import { useToast } from "@/contexts/ToastContext";
+import { useUser } from "@/hooks/useUser";
+import { sendPushNotification } from "@/app/actions/push";
 
 interface PhotoUploadModalProps {
     isOpen: boolean;
@@ -14,6 +17,7 @@ interface PhotoUploadModalProps {
     onSuccess: () => void;
     initialMode?: 'view' | 'upload';
     existingPhotos?: string[];
+    placeName?: string; // Added for notification
 }
 
 export function PhotoUploadModal({
@@ -22,14 +26,19 @@ export function PhotoUploadModal({
     visitId,
     onSuccess,
     initialMode = 'upload',
-    existingPhotos = []
+    existingPhotos = [],
+    placeName = "un lugar"
 }: PhotoUploadModalProps) {
+    const { user } = useUser();
     const [mode, setMode] = useState<'view' | 'upload'>(initialMode);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+    const [isDeleting, setIsDeleting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { showToast } = useToast();
 
     const [mounted, setMounted] = useState(false); // Added mounted state
 
@@ -59,25 +68,55 @@ export function PhotoUploadModal({
         if (!visitId || !selectedFile) return;
 
         setIsUploading(true);
+        setUploadProgress(0);
         try {
-            // 1. Upload to Storage
-            const downloadUrl = await uploadVisitPhoto(selectedFile, visitId);
+            // 1. Upload to Storage with progress tracking
+            const downloadUrl = await uploadVisitPhoto(selectedFile, visitId, (progress) => {
+                setUploadProgress(progress);
+            });
 
             // 2. Save URL to Firestore
             await addVisitPhoto(visitId, downloadUrl);
 
             // 3. Success
+            showToast("¡Recuerdo guardado! 📸", "success");
             onSuccess();
         } catch (error) {
             console.error(error);
             alert("Error al subir la foto 😢");
         } finally {
             setIsUploading(false);
+            setUploadProgress(0);
         }
     };
 
     const triggerFileInput = () => {
         fileInputRef.current?.click();
+    };
+
+    const handleDeletePhoto = async () => {
+        if (!visitId || existingPhotos.length === 0) return;
+
+        const photoToDelete = existingPhotos[currentPhotoIndex];
+        // Removing confirm dialog for better UX/Reliability
+        // const confirmDelete = window.confirm("¿Eliminar este recuerdo? 🥺 Esta acción no se puede deshacer.");
+        // if (!confirmDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await deleteVisitPhoto(visitId, photoToDelete);
+            // Adjust index if needed
+            if (currentPhotoIndex >= existingPhotos.length - 1 && currentPhotoIndex > 0) {
+                setCurrentPhotoIndex(currentPhotoIndex - 1);
+            }
+            showToast("Foto eliminada", "success");
+            onSuccess(); // Refresh data
+        } catch (error) {
+            console.error("Error deleting photo:", error);
+            alert("Error al eliminar la foto 😢");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     // Use Portal to break out of parent containers (PlaceCard has overflow-hidden)
@@ -144,15 +183,37 @@ export function PhotoUploadModal({
                             </div>
                         )}
 
-                        {/* Switch to Upload Button */}
-                        <div className="pt-2">
+                        {/* Action Buttons */}
+                        <div className="pt-4 space-y-3 flex flex-col">
+                            <div className="sparkle-button-wrapper self-center w-full">
+                                <span className="sparkle-star sparkle-star-1" style={{ color: "#22d3d1" }}>✦</span>
+                                <span className="sparkle-star sparkle-star-2" style={{ color: "#22d3d1" }}>✦</span>
+                                <span className="sparkle-star sparkle-star-3" style={{ color: "#06b6d4" }}>★</span>
+                                <span className="sparkle-star sparkle-star-4" style={{ color: "#22d3d1" }}>✦</span>
+                                <button
+                                    onClick={() => setMode('upload')}
+                                    className="btn-pixel text-sm w-full flex items-center justify-center gap-2"
+                                    style={{ background: "#06b6d4", color: "#0f172a" }}
+                                >
+                                    <Plus size={16} />
+                                    <span>Agregar otro recuerdo</span>
+                                </button>
+                            </div>
+
                             <button
-                                onClick={() => setMode('upload')}
-                                className="btn-pixel py-2 px-4 text-sm flex items-center justify-center gap-2 w-full border border-gray-600 hover:border-white"
-                                style={{ background: "transparent" }}
+                                onClick={() => {
+                                    console.log("Delete button clicked");
+                                    handleDeletePhoto();
+                                }}
+                                disabled={isDeleting}
+                                className="btn-pixel-outline mt-2 text-[var(--pixel-pink)] border-[var(--pixel-pink)] hover:bg-[var(--pixel-pink)]/10 text-xs w-full flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                <Plus size={16} className="text-[var(--pixel-cyan)]" />
-                                <span>Agregar otro recuerdo ➕</span>
+                                {isDeleting ? "Eliminando..." : (
+                                    <>
+                                        <Trash2 size={16} />
+                                        Eliminar esta foto
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -218,21 +279,34 @@ export function PhotoUploadModal({
                         {/* Action Buttons */}
                         <div className="space-y-3 pt-2">
                             {selectedFile ? (
-                                <button
-                                    onClick={handleUpload}
-                                    disabled={isUploading}
-                                    className="w-full btn-pixel py-3 flex items-center justify-center gap-2 font-bold text-lg"
-                                    style={{ background: "var(--pixel-cyan)", color: "#000" }}
-                                >
-                                    {isUploading ? (
-                                        <span className="animate-pulse">Subiendo... 📡</span>
-                                    ) : (
-                                        <>
-                                            <Upload size={20} />
-                                            Guardar Recuerdo
-                                        </>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={handleUpload}
+                                        disabled={isUploading}
+                                        className="w-full btn-pixel py-3 flex items-center justify-center gap-2 font-bold text-lg disabled:opacity-70"
+                                        style={{ background: "var(--pixel-cyan)", color: "#000" }}
+                                    >
+                                        {isUploading ? (
+                                            <span className="flex items-center gap-2">
+                                                📡 Subiendo... {Math.round(uploadProgress)}%
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <Upload size={20} />
+                                                Guardar Recuerdo
+                                            </>
+                                        )}
+                                    </button>
+                                    {/* Progress Bar */}
+                                    {isUploading && (
+                                        <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-[var(--pixel-pink)] to-[var(--pixel-cyan)] transition-all duration-300 ease-out"
+                                                style={{ width: `${uploadProgress}%` }}
+                                            />
+                                        </div>
                                     )}
-                                </button>
+                                </div>
                             ) : (
                                 <div className="flex flex-col gap-2">
                                     {existingPhotos.length > 0 && (

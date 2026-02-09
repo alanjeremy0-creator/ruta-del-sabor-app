@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Google Maps Diagnostic (v3)</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0D0B1E;
+            color: #fff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #444;
+            border-radius: 8px;
+            background: #1a1a2e;
+        }
+
+        .success {
+            color: #4ade80;
+            border-color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        .error {
+            color: #ef4444;
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .warn {
+            color: #facc15;
+            border-color: #facc15;
+            background: rgba(250, 204, 21, 0.1);
+        }
+
+        #log {
+            white-space: pre-wrap;
+            word-break: break-all;
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Diagnóstico de Google Maps (v3)</h1>
+    <p class="subtitle">Checking from: <span id="location">Loading...</span></p>
+
+    <div id="step1" class="status">1. Carga del Script de Google: <span id="s1-status">...</span></div>
+    <div id="step2" class="status">2. Librería "Places": <span id="s2-status">...</span></div>
+    <div id="step3" class="status">3. Prueba de Conexión (Facturación): <span id="s3-status">...</span></div>
+
+    <h3>Registro de Eventos:</h3>
+    <div id="log"></div>
+
+    <script>
+        document.getElementById('location').innerText = window.location.href;
+        let scriptLoaded = false;
+
+        function log(msg, type = 'info') {
+            const el = document.getElementById('log');
+            const color = type === 'error' ? '#ff6b6b' : (type === 'success' ? '#4ade80' : (type === 'warn' ? '#facc15' : '#ddd'));
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML += `<div style="color:${color}">[${time}] ${msg}</div>`;
+        }
+
+        function fail(stepId, msg) {
+            const el = document.getElementById(stepId + '-status');
+            if (el.innerHTML !== 'OK') {
+                el.innerHTML = 'FALLÓ ❌';
+                document.getElementById(stepId).className = 'status error';
+                log(msg, 'error');
+            }
+        }
+
+        function pass(stepId) {
+            document.getElementById(stepId + '-status').innerHTML = 'OK ✅';
+            document.getElementById(stepId).className = 'status success';
+        }
+
+        const API_KEY = "AIzaSyAFaUStmrrkGenfexNf0i47VZi_cyXDqmU";
+
+        log(`Clave API: ${API_KEY.substring(0, 5)}...`);
+        log(`Navegador: ${navigator.userAgent}`);
+
+        // Set a timeout to detect hangs (independent of translation)
+        setTimeout(() => {
+            if (!scriptLoaded) {
+                fail('step1', 'TIEMPO AGOTADO: El script tardó más de 8 segundos en cargar.');
+                log('🚨 POSIBLES CAUSAS:', 'warn');
+                log('1. Tienes un BLOQUEADOR DE ANUNCIOS (AdBlock, uBlock, etc.) activado.', 'warn');
+                log('2. Tu red (WiFi/VPN) está bloqueando "maps.googleapis.com".', 'warn');
+                log('3. Estás usando "Navegación Privada" con protección estricta.', 'warn');
+                log('👉 INTENTA: Desactivar AdBlock o abrir esto en una ventana de Incógnito normal.', 'warn');
+            }
+        }, 8000);
+
+        window.initMap = function () {
+            scriptLoaded = true;
+            pass('step1');
+            log('Script cargado exitosamente via Callback.');
+            checkLibraries();
+        };
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&libraries=places&callback=initMap`;
+        script.async = true;
+
+        script.onerror = (e) => {
+            fail('step1', 'Error de Red al cargar el script.');
+            log(JSON.stringify(e), 'error');
+        };
+
+        document.head.appendChild(script);
+
+        function checkLibraries() {
+            if (google.maps.places) {
+                pass('step2');
+                log('Librería "Places" encontrada.');
+                testQuota();
+            } else {
+                fail('step2', 'Librería "Places" NO cargó correctamente.');
+            }
+        }
+
+        function testQuota() {
+            log('Iniciando petición real a Google (esto verifica la Facturación)...');
+            const service = new google.maps.places.AutocompleteService();
+
+            service.getPlacePredictions({ input: 'tacos', componentRestrictions: { country: 'mx' } }, (predictions, status) => {
+                log(`Respuesta de API Status: ${status}`);
+
+                if (status === google.maps.places.PlacesServiceStatus.OK || status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                    pass('step3');
+                    log(`¡ÉXITO! Recibimos ${predictions ? predictions.length : 0} predicciones.`);
+                    log('✅ SISTEMA OPERATIVO VERDE: Tu Clave API y Facturación están activas.', 'success');
+                } else {
+                    fail('step3', `Error de API: ${status}`);
+                    if (status === 'REQUEST_DENIED') log('❌ RAZÓN: La clave API tiene restricciones incorrectas (Referrer/IP).', 'error');
+                    if (status === 'OVER_QUERY_LIMIT') log('❌ RAZÓN: Facturación desactivada o Cuota excedida.', 'error');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

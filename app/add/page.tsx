@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, Search, MapPin, Heart } from "lucide-react";
-import { Autocomplete } from "@react-google-maps/api";
+import { MapPin, Heart, X, Search } from "lucide-react";
+// import { Autocomplete } from "@react-google-maps/api"; // Removed in favor of manual implementation
 import { useGoogleMaps } from "@/hooks/useGoogleMaps";
 import { savePlace, createVisit, mapGoogleTypeToCategory, type Place } from "@/lib/firestore";
 import { Timestamp } from "firebase/firestore";
@@ -11,11 +11,17 @@ import { useUser } from "@/hooks/useUser";
 import { FoodEmblem } from "@/components/ui/FoodEmblem";
 import { getAutocompleteOptions } from "@/lib/googleMaps";
 import { PixelConfetti } from "@/components/ui/PixelConfetti";
+import { useToast } from "@/contexts/ToastContext";
+import { sendPushNotification } from "@/app/actions/push";
 
 export default function AddPlanPage() {
     const router = useRouter();
     const { user } = useUser();
     const { isLoaded, loadError } = useGoogleMaps();
+    const { showToast } = useToast();
+
+    // ... (rest of state)
+
 
     // Form state
     const [searchQuery, setSearchQuery] = useState("");
@@ -28,17 +34,28 @@ export default function AddPlanPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
-    // Autocomplete ref
+    // Manual Autocomplete Implementation
+    const inputRef = useRef<HTMLInputElement>(null);
     const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-    const handleLoad = (autocomplete: google.maps.places.Autocomplete) => {
-        autocompleteRef.current = autocomplete;
-    };
+    useEffect(() => {
+        if (isLoaded && inputRef.current && window.google) {
+            try {
+                const options = getAutocompleteOptions();
+                const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, options);
+                autocompleteRef.current = autocomplete;
+
+                autocomplete.addListener("place_changed", handlePlaceChanged);
+            } catch (e) {
+                console.error("Error initializing autocomplete:", e);
+            }
+        }
+    }, [isLoaded]);
 
     const handlePlaceChanged = () => {
         if (autocompleteRef.current) {
             const place = autocompleteRef.current.getPlace();
-            if (place.geometry && place.place_id && place.name) {
+            if (place && place.geometry && place.place_id && place.name) {
                 setSelectedPlace(place);
                 setSearchQuery(place.name);
                 setUseManualEntry(false);
@@ -86,17 +103,21 @@ export default function AddPlanPage() {
                 placeLat = selectedPlace.geometry.location.lat();
                 placeLng = selectedPlace.geometry.location.lng();
                 category = mapGoogleTypeToCategory(selectedPlace.types || []);
-                photoRef = selectedPlace.photos && selectedPlace.photos.length > 0
-                    ? selectedPlace.photos[0].getUrl({ maxWidth: 400 })
-                    : undefined;
+                if (selectedPlace.photos && selectedPlace.photos.length > 0) {
+                    const photoUrl = selectedPlace.photos[0].getUrl({ maxWidth: 400 });
+                    // Extract the raw reference from the URL (parameter '1s')
+                    const match = photoUrl.match(/[?&]1s([^&]+)/);
+                    if (match) {
+                        photoRef = match[1];
+                    }
+                }
             } else {
                 // Use manual entry - generate a unique ID
-                placeId = `manual-${Date.now()}`;
-                placeName = manualPlaceName.trim();
-                placeAddress = manualAddress.trim();
-                // Default coords (Metepec center) for manual entries
-                placeLat = 19.2533;
-                placeLng = -99.6006;
+                placeId = crypto.randomUUID();
+                placeName = manualPlaceName;
+                placeAddress = manualAddress;
+                placeLat = 19.4326; // Default to CDMX? Or just placeholder.
+                placeLng = -99.1332;
                 category = "food";
                 photoRef = undefined;
             }
@@ -121,6 +142,7 @@ export default function AddPlanPage() {
             });
 
             // Show success animation
+            showToast("¡Plan creado! 📅", "success");
             setIsSubmitting(false);
             setShowSuccess(true);
 
@@ -217,24 +239,23 @@ export default function AddPlanPage() {
                         Busca el nombre del lugar de nuestra visita 🚀 🌮
                     </label>
                     <div className="relative">
-                        <Autocomplete
-                            onLoad={handleLoad}
-                            onPlaceChanged={handlePlaceChanged}
-                            options={getAutocompleteOptions()}
-                        >
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted z-10" />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Tacos, café, sushi..."
-                                    className="w-full pl-10 pr-4 py-3 border-2 border-border bg-surface focus:outline-none focus:border-pink pixel-border text-primary placeholder:text-muted"
-                                    autoFocus
-                                />
-                            </div>
-                        </Autocomplete>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted z-10" />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder={isLoaded ? "Tacos, café, sushi..." : "Cargando mapa..."}
+                                disabled={!isLoaded}
+                                className={`w-full pl-10 pr-4 py-3 border-2 border-border bg-surface focus:outline-none focus:border-pink pixel-border text-primary placeholder:text-muted ${!isLoaded ? "cursor-wait opacity-70" : ""}`}
+                                autoFocus
+                            />
+                        </div>
                     </div>
+
+
+
 
                     {/* Manual Entry Button */}
                     {searchQuery && !selectedPlace && !useManualEntry && (
@@ -372,7 +393,7 @@ export default function AddPlanPage() {
                 )}
             </main>
 
-            <style jsx>{`
+            <style jsx global>{`
                 @keyframes fade-in {
                     from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
@@ -380,7 +401,15 @@ export default function AddPlanPage() {
                 .animate-fade-in {
                     animation: fade-in 0.3s ease-out;
                 }
+                /* FORCE GOOGLE MAPS AUTOCOMPLETE ON TOP */
+                .pac-container {
+                    z-index: 99999 !important;
+                    display: block !important;
+                }
+                .pac-logo {
+                    display: none !important;
+                }
             `}</style>
-        </div>
+        </div >
     );
 }

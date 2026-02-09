@@ -8,6 +8,8 @@ export const TOLUCA_BOUNDS = {
     west: -99.75,
 };
 
+export const LIBRARIES: ("places" | "geometry")[] = ["places", "geometry"];
+
 // Grayscale map style for Neo-Retro aesthetic
 export const GRAYSCALE_MAP_STYLE = [
     {

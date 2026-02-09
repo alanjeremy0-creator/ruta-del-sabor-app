@@ -5,6 +5,9 @@ import { type Visit } from "@/components/ui/PlaceCard";
 import { categoryIcons, FoodIcon } from "@/components/ui/FoodIcons"; // Ensure FoodIcon handles fallback
 import { CalendarClock } from "lucide-react";
 
+import Image from "next/image";
+import { useGooglePlacePhoto } from "@/hooks/useGooglePlacePhoto";
+
 interface PlanStatusCardProps {
     visit: Visit;
     currentUserId: "ara" | "jeremy";
@@ -34,66 +37,80 @@ export function PlanStatusCard({ visit, currentUserId, onConfirm, onReschedule, 
     const IconComponent = categoryIcons[visit.place.category] || FoodIcon;
 
     // --- REUSABLE OFFER CARD COMPONENT ---
-    const OfferCard = ({ showActions }: { showActions: boolean }) => (
-        <div className="bg-[#1a1b2e] rounded-xl border border-white/5 overflow-hidden transition-all hover:bg-[#202136] relative group">
-            {/* Clickable Area for Navigation */}
-            <div
-                onClick={(e) => {
-                    // Prevent navigation if clicking buttons
-                    if ((e.target as HTMLElement).closest('button')) return;
-                    router.push(`/place/${visit.place.id}`);
-                }}
-                className="p-4 cursor-pointer"
-            >
-                <div className="flex items-start gap-4 mb-3">
-                    <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20">
-                        <IconComponent size={24} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-white text-base leading-tight group-hover:text-purple transition-colors">
-                            {visit.place.name}
-                        </h4>
-                        <p className="text-xs text-muted mt-1 line-clamp-2">
-                            {visit.place.address}
-                        </p>
-                    </div>
-                    <div className="text-muted opacity-50 text-xs">
-                        &gt;
-                    </div>
-                </div>
+    const OfferCard = ({ showActions }: { showActions: boolean }) => {
+        const googlePhotoUrl = useGooglePlacePhoto(visit.place.id, visit.place.photoReference);
 
-                {/* Date Badge */}
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--pixel-pink)] bg-surface/50 p-2 rounded border border-white/5">
-                    <CalendarClock className="w-4 h-4" />
-                    {new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(visit.visitDate))}
-                </div>
-            </div>
-
-            {/* Actions Section (Integrated) */}
-            {showActions && (
-                <div className="px-4 pb-4 pt-2 flex gap-3">
-                    <button
-                        onClick={() => onConfirm(visit.id)}
-                        className="flex-1 btn-pixel py-3 px-3 text-sm font-bold flex items-center justify-center gap-2 transform hover:scale-[1.02] transition-transform shadow-lg shadow-cyan-500/20"
-                        style={{ background: "var(--pixel-cyan)", color: "#0f172a", border: "none" }}
-                    >
-                        <span className="text-sm">✅</span>
-                        ¡JALO!
-                    </button>
-                    <button
-                        onClick={onReschedule}
-                        className="flex-1 btn-pixel py-3 px-3 text-[10px] font-bold flex items-center justify-center gap-2 bg-surface border-2 border-gray-600 hover:border-white hover:bg-surface/80 transition-colors text-gray-300"
-                    >
-                        <span className="text-sm">📅</span>
-                        <div className="flex flex-col leading-none text-left">
-                            <span>MEJOR</span>
-                            <span>OTRO DÍA</span>
+        return (
+            <div className="bg-[#1a1b2e] rounded-xl border border-white/5 overflow-hidden transition-all hover:bg-[#202136] relative group">
+                {/* Clickable Area for Navigation */}
+                <div
+                    onClick={(e) => {
+                        // Prevent navigation if clicking buttons
+                        if ((e.target as HTMLElement).closest('button')) return;
+                        router.push(`/place/${visit.place.id}`);
+                    }}
+                    className="p-4 cursor-pointer"
+                >
+                    <div className="flex items-start gap-4 mb-3">
+                        <div className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-purple/10 rounded-lg text-purple border border-purple/20 relative overflow-hidden">
+                            {googlePhotoUrl ? (
+                                <Image
+                                    src={googlePhotoUrl}
+                                    alt={visit.place.name}
+                                    fill
+                                    className="object-cover"
+                                    unoptimized
+                                />
+                            ) : (
+                                <IconComponent size={24} />
+                            )}
                         </div>
-                    </button>
+                        <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-white text-base leading-tight group-hover:text-purple transition-colors">
+                                {visit.place.name}
+                            </h4>
+                            <p className="text-xs text-muted mt-1 line-clamp-2">
+                                {visit.place.address}
+                            </p>
+                        </div>
+                        <div className="text-muted opacity-50 text-xs">
+                            &gt;
+                        </div>
+                    </div>
+
+                    {/* Date Badge */}
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--pixel-pink)] bg-surface/50 p-2 rounded border border-white/5">
+                        <CalendarClock className="w-4 h-4" />
+                        {new Intl.DateTimeFormat("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(visit.visitDate))}
+                    </div>
                 </div>
-            )}
-        </div>
-    );
+
+                {/* Actions Section (Integrated) */}
+                {showActions && (
+                    <div className="px-4 pb-4 pt-2 flex gap-3">
+                        <button
+                            onClick={() => onConfirm(visit.id)}
+                            className="flex-1 btn-pixel py-3 px-3 text-sm font-bold flex items-center justify-center gap-2 transform hover:scale-[1.02] transition-transform shadow-lg shadow-cyan-500/20"
+                            style={{ background: "var(--pixel-cyan)", color: "#0f172a", border: "none" }}
+                        >
+                            <span className="text-sm">✅</span>
+                            ¡JALO!
+                        </button>
+                        <button
+                            onClick={onReschedule}
+                            className="flex-1 btn-pixel py-3 px-3 text-[10px] font-bold flex items-center justify-center gap-2 bg-surface border-2 border-gray-600 hover:border-white hover:bg-surface/80 transition-colors text-gray-300"
+                        >
+                            <span className="text-sm">📅</span>
+                            <div className="flex flex-col leading-none text-left">
+                                <span>MEJOR</span>
+                                <span>OTRO DÍA</span>
+                            </div>
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     if (isMyTurn) {
         // CASE: I need to respond (It's my turn)

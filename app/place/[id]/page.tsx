@@ -339,11 +339,42 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                     </section>
                 )}
 
-                {/* Photo Gallery */}
+                {/* User Uploaded Photos */}
+                {(() => {
+                    const userPhotos = visits.flatMap(v => v.photos || []);
+                    if (userPhotos.length === 0) return null;
+                    return (
+                        <section>
+                            <h2 className="font-space font-bold text-xl mb-4 flex items-center gap-2">
+                                <span className="text-pink">💕</span> Nuestros Recuerdos
+                            </h2>
+                            <div className="grid grid-cols-2 gap-3">
+                                {userPhotos.map((url, i) => (
+                                    <div
+                                        key={i}
+                                        className={`relative aspect-square overflow-hidden rounded-lg border-2 border-pink/50 shadow-sm group ${i === 0 && userPhotos.length > 1 ? 'col-span-2 aspect-video' : ''}`}
+                                    >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={url}
+                                            alt={`Nuestro recuerdo ${i + 1}`}
+                                            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                        />
+                                        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 rounded-full text-[10px] text-pink font-bold">
+                                            📸 Nosotros
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    );
+                })()}
+
+                {/* Photo Gallery (Google) */}
                 {photos.length > 0 && (
                     <section>
                         <h2 className="font-space font-bold text-xl mb-4 flex items-center gap-2">
-                            <span className="text-pink">📸</span> Galería
+                            <span className="text-pink">📸</span> Galería (Google)
                         </h2>
                         <div className="grid grid-cols-2 gap-3">
                             {photos.slice(0, 4).map((url, i) => (

@@ -10,6 +10,8 @@ import { FoodEmblem } from "@/components/ui/FoodEmblem";
 import { getVisitById, getPlace, completeVisit, type Visit, type Place, type Rating } from "@/lib/firestore";
 import { useUser } from "@/hooks/useUser";
 import { PhotoUploadModal } from "@/components/ui/PhotoUploadModal";
+import { useToast } from "@/contexts/ToastContext";
+import { sendPushNotification } from "@/app/actions/push";
 
 interface HydratedVisit {
     id: string;
@@ -23,6 +25,7 @@ export default function RatePage({ params }: { params: Promise<{ visitId: string
     const router = useRouter();
     const { visitId } = use(params);
     const { user, isLoading: userLoading } = useUser();
+    const { showToast } = useToast();
 
     const [visit, setVisit] = useState<HydratedVisit | null>(null);
     const [loading, setLoading] = useState(true);
@@ -94,6 +97,17 @@ export default function RatePage({ params }: { params: Promise<{ visitId: string
             await completeVisit(visit.id, user.id as "ara" | "jeremy", rating, notes);
             console.log("completeVisit success");
 
+            // --- SEND PUSH NOTIFICATION ---
+            const otherUserId = user.id === "ara" ? "jeremy" : "ara";
+            const placeName = visit.place.name;
+            const notificationTitle = `⭐ ${user.name} ya dio su veredicto...`;
+            const notificationBody = `¿Le gustó ${placeName}? Entra a ver qué dijo y cuánto le puso. 🫣`;
+
+            sendPushNotification(otherUserId, notificationTitle, notificationBody, { url: `/rate/${visit.id}` })
+                .catch(err => console.error("Failed to send push:", err));
+            // ------------------------------
+
+            showToast("¡Gracias por calificar! ⭐", "success");
             setShowConfetti(true);
             setIsSubmitting(false);
 

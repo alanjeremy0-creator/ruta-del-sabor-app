@@ -258,8 +258,15 @@ h4 {
 }
 
 @keyframes flash {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .animate-flash {
@@ -394,6 +401,35 @@ h4 {
 .btn-pixel-secondary:hover {
   border-color: var(--pixel-purple);
   background: rgba(185, 103, 255, 0.1);
+}
+
+/* Outline Pixel Button - No sparkle effect */
+.btn-pixel-outline {
+  background: transparent;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 24px;
+  border: 2px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  clip-path: polygon(0 4px,
+      4px 4px,
+      4px 0,
+      calc(100% - 4px) 0,
+      calc(100% - 4px) 4px,
+      100% 4px,
+      100% calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) 100%,
+      4px 100%,
+      4px calc(100% - 4px),
+      0 calc(100% - 4px));
+}
+
+.btn-pixel-outline:hover {
+  border-color: currentColor;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* FAB Button */
@@ -601,4 +637,31 @@ div[style*="background-color: white"][style*="border-radius"]>div:first-child {
 /* Also hide the backdrop/overlay of the warning */
 .pac-container~div[style*="position: fixed"] {
   display: none !important;
+}
+
+/* ============ GOOGLE MAPS AUTOCOMPLETE FIX ============ */
+.pac-container {
+  z-index: 99999 !important;
+  background-color: #1a1a2e !important;
+  border: 1px solid #3e3e5e !important;
+  border-radius: 8px !important;
+  font-family: 'Inter', sans-serif !important;
+  margin-top: 4px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.pac-item {
+  border-top: 1px solid #3e3e5e !important;
+  padding: 12px 16px !important;
+  color: #F2EBE3 !important;
+  cursor: pointer !important;
+}
+
+.pac-item:hover {
+  background-color: #2a2a40 !important;
+}
+
+.pac-item-query {
+  color: #F2EBE3 !important;
+  font-weight: bold !important;
 }

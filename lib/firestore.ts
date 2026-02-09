@@ -11,9 +11,11 @@ import {
     orderBy,
     Timestamp,
     setDoc,
-    arrayUnion
+    arrayUnion,
+    arrayRemove
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { deleteVisitPhotoFromStorage } from "./storage";
 
 // Types
 export interface Rating {
@@ -188,6 +190,25 @@ export async function addVisitPhoto(visitId: string, photoUrl: string): Promise<
     await updateDoc(docRef, {
         photos: arrayUnion(photoUrl)
     });
+}
+
+export async function deleteVisitPhoto(visitId: string, photoUrl: string): Promise<void> {
+    console.log("[Firestore] Deleting photo from visit:", visitId);
+
+    // First delete from Storage
+    try {
+        await deleteVisitPhotoFromStorage(photoUrl);
+    } catch (storageError) {
+        console.error("[Firestore] Failed to delete from storage, continuing with Firestore removal:", storageError);
+        // Continue even if storage delete fails - we still want to remove from Firestore
+    }
+
+    // Then remove URL from Firestore
+    const docRef = doc(db, "visits", visitId);
+    await updateDoc(docRef, {
+        photos: arrayRemove(photoUrl)
+    });
+    console.log("[Firestore] Photo removed from visit document");
 }
 
 export async function deleteVisit(visitId: string): Promise<void> {

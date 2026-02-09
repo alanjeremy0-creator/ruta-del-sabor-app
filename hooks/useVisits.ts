@@ -52,6 +52,7 @@ export function useVisits() {
                         // Fix: Default to creator if proposedBy is missing
                         proposedBy: visit.proposedBy || visit.userId,
                         ratings: visit.ratings || {},
+                        photos: visit.photos || [],
                     };
                     return v;
                 }));
