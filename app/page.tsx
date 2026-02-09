@@ -352,6 +352,7 @@ export default function HomePage() {
                   visit={visit}
                   currentUserId={user?.id}
                   onRate={handleRate}
+                  onPhotoChange={refreshVisits}
                   users={allUsers}
                 />
               ))}
@@ -381,8 +382,8 @@ export default function HomePage() {
                   key={visit.id}
                   visit={visit}
                   currentUserId={user?.id}
+                  onPhotoChange={refreshVisits}
                   users={allUsers}
-                // blocked by UI usually
                 />
               ))}
             </div>

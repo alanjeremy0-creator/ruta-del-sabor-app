@@ -42,10 +42,11 @@ interface PlaceCardProps {
     visit: Visit;
     currentUserId?: string; // To know who is viewing
     onRate?: (visitId: string) => void;
+    onPhotoChange?: () => void; // Callback when photos are added/deleted
     users?: Record<string, { id: string; name: string; avatarUrl: string }>; // Custom avatars from localStorage
 }
 
-export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProps) {
+export function PlaceCard({ visit, currentUserId, onRate, onPhotoChange, users }: PlaceCardProps) {
     const { place, status, ratings, visitDate } = visit;
     const isPast = new Date(visitDate) < new Date(); // Simple check, buffer handled in parent
     const [showPhotoModal, setShowPhotoModal] = useState(false);
@@ -276,7 +277,8 @@ export function PlaceCard({ visit, currentUserId, onRate, users }: PlaceCardProp
                 onClose={() => setShowPhotoModal(false)}
                 onSuccess={() => {
                     setShowPhotoModal(false);
-                    // Could trigger a refresh here if needed
+                    // Trigger parent refresh so UI updates without page reload
+                    if (onPhotoChange) onPhotoChange();
                 }}
                 existingPhotos={visit.photos}
             />
