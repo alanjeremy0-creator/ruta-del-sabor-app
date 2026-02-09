@@ -1,5 +1,6 @@
 "use server";
 
+// @ts-ignore - web-push types not found on Vercel build
 import webpush from "web-push";
 import { db } from "@/lib/firebase-admin"; // We need admin access for backend sending
 

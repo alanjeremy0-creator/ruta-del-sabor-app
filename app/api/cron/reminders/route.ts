@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase-admin";
+// @ts-ignore - web-push types not found on Vercel build
 import webpush from "web-push";
 
 // Configure VAPID
