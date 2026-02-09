@@ -141,6 +141,15 @@ export default function AddPlanPage() {
                 status: "planned",
             });
 
+            // --- SEND PUSH NOTIFICATION: NEW PLAN ---
+            const otherUserId = user.id === "ara" ? "jeremy" : "ara";
+            const notificationTitle = "✨ ¡Nuevo plan a la vista!";
+            const notificationBody = `${user.name} quiere ir a ${placeName} 🌮. ¿Jalas o te freseas? 👀`;
+
+            sendPushNotification(otherUserId, notificationTitle, notificationBody, { url: "/" })
+                .catch(err => console.error("Failed to send push:", err));
+            // -----------------------------------------
+
             // Show success animation
             showToast("¡Plan creado! 📅", "success");
             setIsSubmitting(false);

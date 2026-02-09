@@ -78,6 +78,17 @@ export function PhotoUploadModal({
             // 2. Save URL to Firestore
             await addVisitPhoto(visitId, downloadUrl);
 
+            // --- SEND PUSH NOTIFICATION: NEW PHOTO ---
+            if (user) {
+                const otherUserId = user.id === "ara" ? "jeremy" : "ara";
+                const notificationTitle = "📸 ¡Mira tu fotuca!";
+                const notificationBody = `${user.name} subió un recuerdo de ${placeName}. ¡Nos vemos tan genial! Te amo ❤️`;
+
+                sendPushNotification(otherUserId, notificationTitle, notificationBody, { url: "/" })
+                    .catch(err => console.error("Failed to send push:", err));
+            }
+            // -----------------------------------------
+
             // 3. Success
             showToast("¡Recuerdo guardado! 📸", "success");
             onSuccess();
