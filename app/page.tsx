@@ -46,16 +46,7 @@ export default function HomePage() {
   // Hook call for the main confirmed plan photo
   const nextVisitPhoto = useGooglePlacePhoto(rawNextVisit?.place.id, rawNextVisit?.place.photoReference);
 
-  // Auto-refresh: Check every 2 minutes to keep sync with partner's actions
-  useEffect(() => {
-    const REFRESH_INTERVAL = 2 * 60 * 1000; // 2 minutes
 
-    const interval = setInterval(() => {
-      refreshVisits();
-    }, REFRESH_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [refreshVisits]);
 
   useEffect(() => {
     if (!userLoading && needsOnboarding) {
